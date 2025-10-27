@@ -182,7 +182,17 @@ export default function StatisticsPage() {
                 <Banknote className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{tl(annualTotal)}</div>
+                <div className="text-3xl font-extrabold tracking-tight">{tl(annualTotal)}</div>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <div className="rounded-lg border bg-primary/5 p-3">
+                    <div className="text-xs text-muted-foreground">%40 pay</div>
+                    <div className="text-lg font-semibold text-foreground">{tl(Math.round(annualTotal * 0.4))}</div>
+                  </div>
+                  <div className="rounded-lg border bg-secondary/5 p-3">
+                    <div className="text-xs text-muted-foreground">%60 pay</div>
+                    <div className="text-lg font-semibold text-foreground">{tl(Math.round(annualTotal * 0.6))}</div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 

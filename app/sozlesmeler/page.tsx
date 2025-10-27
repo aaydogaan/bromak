@@ -81,7 +81,7 @@ export default function ContractsPage() {
   const companyLogo = (name?: string | null): string => {
     const n = (name || '').toLowerCase()
     if (n.includes('mak')) return '/mak-logo.png'
-    if (n.includes('brodigital') || n.includes('brodi')) return '/brodigital-logo.jpg'
+    if (n.includes('brodigital') || n.includes('brodi')) return '/brodigital-logo.png'
     return '/mak-logo.png'
   }
 
@@ -218,7 +218,7 @@ export default function ContractsPage() {
 
   const handleDownload = (contract: UIContract) => {
     const logoLeft = '/mak-logo.png'
-    const logoRight = '/brodigital-logo.jpg'
+    const logoRight = '/brodigital-logo.png'
     const amtDigits = (contract.amountText || '').replace(/[^0-9]/g, '')
     const formattedAmount = amtDigits ? new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(Number(amtDigits)) : (contract.amountText || '—')
     const html = `<!doctype html>
@@ -641,7 +641,7 @@ export default function ContractsPage() {
               <div className="mt-1 whitespace-pre-wrap">{viewing?.cancellationTerms ?? '—'}</div>
             </div>
             <div className="flex items-center justify-center gap-6 pt-12">
-              <img src="/brodigital-logo.jpg" alt="Brodigital" className="h-10 w-auto object-contain" />
+              <img src="/brodigital-logo.png" alt="Brodigital" className="h-10 w-auto object-contain" />
               <img src="/mak-logo.png" alt="Mak" className="h-10 w-auto object-contain" />
             </div>
           </div>
