@@ -81,7 +81,7 @@ export default function ContractsPage() {
   const companyLogo = (name?: string | null): string => {
     const n = (name || '').toLowerCase()
     if (n.includes('mak')) return '/mak-logo.png'
-    if (n.includes('brodigital') || n.includes('brodi')) return '/brodigital-logo.jpg'
+    if (n.includes('brodigital') || n.includes('brodi')) return '/brodigital-logo.png'
     return '/mak-logo.png'
   }
 
