@@ -218,7 +218,7 @@ export default function ContractsPage() {
 
   const handleDownload = (contract: UIContract) => {
     const logoLeft = '/mak-logo.png'
-    const logoRight = '/brodigital-logo.jpg'
+    const logoRight = '/brodigital-logo.png'
     const amtDigits = (contract.amountText || '').replace(/[^0-9]/g, '')
     const formattedAmount = amtDigits ? new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(Number(amtDigits)) : (contract.amountText || '—')
     const html = `<!doctype html>
