@@ -641,7 +641,7 @@ export default function ContractsPage() {
               <div className="mt-1 whitespace-pre-wrap">{viewing?.cancellationTerms ?? '—'}</div>
             </div>
             <div className="flex items-center justify-center gap-6 pt-12">
-              <img src="/brodigital-logo.jpg" alt="Brodigital" className="h-10 w-auto object-contain" />
+              <img src="/brodigital-logo.png" alt="Brodigital" className="h-10 w-auto object-contain" />
               <img src="/mak-logo.png" alt="Mak" className="h-10 w-auto object-contain" />
             </div>
           </div>
