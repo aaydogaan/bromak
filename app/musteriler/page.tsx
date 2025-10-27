@@ -97,6 +97,7 @@ export default function ClientsPage() {
   const [editForm, setEditForm] = useState({ name: "", email: "", phone: "", company: "", income: "", notes: "", projectStatus: "ongoing" as "ongoing" | "completed" | "paused", joinDate: "" })
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [createForm, setCreateForm] = useState({ name: "", email: "", phone: "", company: "", income: "", notes: "", projectStatus: "ongoing" as "ongoing" | "completed" | "paused", joinDate: new Date().toISOString().slice(0,10) })
+  const [createStep, setCreateStep] = useState(1)
 
   const handleViewDetails = (client: Client) => {
     setSelectedClient(client)
@@ -301,7 +302,7 @@ export default function ClientsPage() {
               <h1 className="text-3xl font-bold text-foreground">Müşteriler</h1>
               <p className="mt-2 text-muted-foreground">Tüm müşterilerinizi görüntüleyin ve yönetin</p>
             </div>
-            <Button className="gap-2 w-full sm:w-auto" onClick={() => setIsCreateOpen(true)}>
+            <Button className="gap-2 w-full sm:w-auto" onClick={() => { setCreateStep(1); setIsCreateOpen(true) }}>
               <Plus className="h-4 w-4" />
               Yeni Müşteri
             </Button>
@@ -341,57 +342,71 @@ export default function ClientsPage() {
 
       {/* Yeni Müşteri Popup */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[480px]">
           <DialogHeader>
             <DialogTitle>Yeni Müşteri</DialogTitle>
-            <DialogDescription>Yeni müşteri bilgilerini girin.</DialogDescription>
+            <DialogDescription>{createStep === 1 ? "Temel bilgileri girin." : "Ek bilgileri tamamlayın."}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="grid gap-2">
-              <Label htmlFor="create-name">Ad Soyad</Label>
-              <Input id="create-name" value={createForm.name} onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })} />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="create-email">E-posta</Label>
-              <Input id="create-email" type="email" value={createForm.email} onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })} />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="create-phone">Telefon</Label>
-              <Input id="create-phone" value={createForm.phone} onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })} />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="create-company">Tür/Şirket (Bireysel/Kurumsal)</Label>
-              <Input id="create-company" value={createForm.company} onChange={(e) => setCreateForm({ ...createForm, company: e.target.value })} />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="create-join-date">Başlangıç Tarihi</Label>
-              <Input id="create-join-date" type="date" value={createForm.joinDate} onChange={(e) => setCreateForm({ ...createForm, joinDate: e.target.value })} />
-            </div>
-            <div className="grid gap-2">
-              <Label>Proje Durumu</Label>
-              <Select value={createForm.projectStatus} onValueChange={(v: "ongoing" | "completed" | "paused") => setCreateForm({ ...createForm, projectStatus: v })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Proje durumu seçin" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ongoing">Devam Ediyor</SelectItem>
-                  <SelectItem value="completed">Bitti</SelectItem>
-                  <SelectItem value="paused">Beklemede</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="create-income">Fiyat (Toplam Gelir)</Label>
-              <Input id="create-income" type="number" inputMode="decimal" value={createForm.income} onChange={(e) => setCreateForm({ ...createForm, income: e.target.value })} />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="create-notes">Notlar</Label>
-              <Textarea id="create-notes" rows={4} value={createForm.notes} onChange={(e) => setCreateForm({ ...createForm, notes: e.target.value })} />
-            </div>
+            {createStep === 1 ? (
+              <>
+                <div className="grid gap-2">
+                  <Label htmlFor="create-name">Ad Soyad</Label>
+                  <Input id="create-name" value={createForm.name} onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="create-email">E-posta</Label>
+                  <Input id="create-email" type="email" value={createForm.email} onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="create-phone">Telefon</Label>
+                  <Input id="create-phone" value={createForm.phone} onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="create-company">Tür/Şirket (Bireysel/Kurumsal)</Label>
+                  <Input id="create-company" value={createForm.company} onChange={(e) => setCreateForm({ ...createForm, company: e.target.value })} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="create-join-date">Başlangıç Tarihi</Label>
+                  <Input id="create-join-date" type="date" value={createForm.joinDate} onChange={(e) => setCreateForm({ ...createForm, joinDate: e.target.value })} />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="grid gap-2">
+                  <Label>Proje Durumu</Label>
+                  <Select value={createForm.projectStatus} onValueChange={(v: "ongoing" | "completed" | "paused") => setCreateForm({ ...createForm, projectStatus: v })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Proje durumu seçin" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ongoing">Devam Ediyor</SelectItem>
+                      <SelectItem value="completed">Bitti</SelectItem>
+                      <SelectItem value="paused">Beklemede</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="create-income">Fiyat (Toplam Gelir)</Label>
+                  <Input id="create-income" type="number" inputMode="decimal" value={createForm.income} onChange={(e) => setCreateForm({ ...createForm, income: e.target.value })} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="create-notes">Notlar</Label>
+                  <Textarea id="create-notes" rows={4} value={createForm.notes} onChange={(e) => setCreateForm({ ...createForm, notes: e.target.value })} />
+                </div>
+              </>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateOpen(false)}>İptal</Button>
-            <Button onClick={handleCreateSave}>Kaydet</Button>
+            {createStep === 1 ? (
+              <Button onClick={() => setCreateStep(2)}>İleri</Button>
+            ) : (
+              <div className="flex gap-2">
+                <Button variant="secondary" onClick={() => setCreateStep(1)}>Geri</Button>
+                <Button onClick={handleCreateSave}>Kaydet</Button>
+              </div>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

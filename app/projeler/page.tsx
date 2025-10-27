@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Plus, Search } from "lucide-react"
 import Link from "next/link"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { supabase } from "@/lib/supabase"
 
 type ProjectStatus = 'planning' | 'in_progress' | 'on_hold' | 'completed' | 'cancelled'
@@ -71,6 +71,7 @@ export default function ProjectsPage() {
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
+  const [sortBy, setSortBy] = useState<'deadline' | 'budget' | 'start_date'>('deadline')
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -107,6 +108,40 @@ export default function ProjectsPage() {
       setFilteredProjects(filtered)
     }
   }, [searchQuery, projects])
+
+  // Robust budget parser (handles TL strings and commas)
+  const parseBudget = (val?: string): number => {
+    const raw = (val || '').trim()
+    if (!raw) return 0
+    const normalized = raw.replace(/[^0-9,.-]/g, '').replace(/\./g, '').replace(',', '.')
+    let num = parseFloat(normalized)
+    if (!Number.isFinite(num)) {
+      const digits = raw.replace(/\D/g, '')
+      num = digits ? parseFloat(digits) : 0
+    }
+    return Number.isFinite(num) ? num : 0
+  }
+
+  // Sorted list derived from filteredProjects
+  const sortedProjects = useMemo(() => {
+    const arr = [...filteredProjects]
+    if (sortBy === 'deadline') {
+      arr.sort((a, b) => {
+        const da = a.deadline ? new Date(a.deadline).getTime() : 0
+        const db = b.deadline ? new Date(b.deadline).getTime() : 0
+        return db - da // newest/end-date last first
+      })
+    } else if (sortBy === 'budget') {
+      arr.sort((a, b) => parseBudget(b.budget) - parseBudget(a.budget))
+    } else if (sortBy === 'start_date') {
+      arr.sort((a, b) => {
+        const sa = a.start_date ? new Date(a.start_date).getTime() : 0
+        const sb = b.start_date ? new Date(b.start_date).getTime() : 0
+        return sb - sa
+      })
+    }
+    return arr
+  }, [filteredProjects, sortBy])
 
   const handleEdit = (project: Project) => {
     setEditingProject(project)
@@ -181,6 +216,18 @@ export default function ProjectsPage() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
+              <div>
+                <select
+                  className="h-10 rounded-md border bg-background px-3 text-sm"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as 'deadline' | 'budget' | 'start_date')}
+                  aria-label="Sırala"
+                >
+                  <option value="deadline">Bitiş Tarihine Göre (Yeni→Eski)</option>
+                  <option value="budget">Bütçeye Göre (Yüksek→Düşük)</option>
+                  <option value="start_date">Başlangıç Tarihine Göre (Yeni→Eski)</option>
+                </select>
+              </div>
               <Link href="/projeler/yeni">
                 <Button>
                   <Plus className="mr-2 h-4 w-4" />
@@ -210,7 +257,7 @@ export default function ProjectsPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredProjects.map((project) => {
+              {sortedProjects.map((project) => {
                 // Veritabanından gelen projeyi bileşenin beklediği forma dönüştürüyoruz
                 const formattedProject: Project = {
                   ...project,
