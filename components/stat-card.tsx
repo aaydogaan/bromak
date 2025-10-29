@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react"
 import { Card } from "@/components/ui/card"
+import Money from "@/components/money"
 
 interface StatCardProps {
   title: string
@@ -7,15 +8,18 @@ interface StatCardProps {
   icon: LucideIcon
   trend?: string
   trendUp?: boolean
+  hideable?: boolean
 }
 
-export function StatCard({ title, value, icon: Icon, trend, trendUp }: StatCardProps) {
+export function StatCard({ title, value, icon: Icon, trend, trendUp, hideable }: StatCardProps) {
   return (
     <Card className="glass-effect p-6 transition-all hover:shadow-lg hover:shadow-primary/5">
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <p className="mt-2 text-3xl font-bold text-foreground">{value}</p>
+          <p className="mt-2 text-3xl font-bold text-foreground">
+            {hideable ? <Money value={String(value)} /> : value}
+          </p>
           {trend && (
             <p className={`mt-2 text-xs font-medium ${trendUp ? "text-green-600" : "text-red-600"}`}>{trend}</p>
           )}

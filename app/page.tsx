@@ -209,6 +209,7 @@ export default function DashboardPage() {
               title="Bu Ay Kazanç"
               value={formatTL(monthRevenue)}
               icon={Banknote}
+              hideable
               trend={monthTrendText}
               trendUp={monthTrendUp}
             />

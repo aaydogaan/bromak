@@ -1,6 +1,7 @@
 "use client"
 import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import Money from "@/components/money"
 import { RevenueChart } from "@/components/revenue-chart"
 import { ProjectStatusChart } from "@/components/project-status-chart"
 import { Pie, PieChart, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts"
@@ -182,15 +183,15 @@ export default function StatisticsPage() {
                 <Banknote className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-extrabold tracking-tight">{tl(annualTotal)}</div>
+                <div className="text-3xl font-extrabold tracking-tight"><Money value={tl(annualTotal)} /></div>
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   <div className="rounded-lg border bg-primary/5 p-3">
                     <div className="text-xs text-muted-foreground">%40 pay</div>
-                    <div className="text-lg font-semibold text-foreground">{tl(Math.round(annualTotal * 0.4))}</div>
+                    <div className="text-lg font-semibold text-foreground"><Money value={tl(Math.round(annualTotal * 0.4))} /></div>
                   </div>
                   <div className="rounded-lg border bg-secondary/5 p-3">
                     <div className="text-xs text-muted-foreground">%60 pay</div>
-                    <div className="text-lg font-semibold text-foreground">{tl(Math.round(annualTotal * 0.6))}</div>
+                    <div className="text-lg font-semibold text-foreground"><Money value={tl(Math.round(annualTotal * 0.6))} /></div>
                   </div>
                 </div>
               </CardContent>
@@ -202,7 +203,7 @@ export default function StatisticsPage() {
                 <Banknote className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{tl(monthlyAverage)}</div>
+                <div className="text-2xl font-bold"><Money value={tl(monthlyAverage)} /></div>
               </CardContent>
             </Card>
 

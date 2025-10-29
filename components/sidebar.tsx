@@ -4,6 +4,8 @@ import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import { usePathname } from "next/navigation"
+import { Eye, EyeOff } from "lucide-react"
+import { useMoneyVisibility } from "@/components/money-visibility"
 import {
   LayoutDashboard,
   FolderKanban,
@@ -37,6 +39,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
+  const { visible, toggle } = useMoneyVisibility()
 
   return (
     <>
@@ -111,6 +114,14 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
             <p className="mt-1 text-2xl font-bold text-foreground">3</p>
           </div>
           </Link>
+
+          <button
+            onClick={toggle}
+            className="mt-2 flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-medium border hover:bg-accent/50 transition-colors"
+          >
+            {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            {visible ? 'Kazançları Gizle' : 'Kazançları Göster'}
+          </button>
 
           <button
             onClick={async () => {
