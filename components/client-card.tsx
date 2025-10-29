@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Mail, Phone, FolderKanban, Banknote, Calendar, Pencil, Trash2 } from "lucide-react"
+import Money from "@/components/money"
 
 interface Client {
   id: number
@@ -100,7 +101,7 @@ export function ClientCard({ client, onViewDetails, onEdit, onDelete }: ClientCa
               <Banknote className="h-4 w-4" />
               <span>Toplam Gelir</span>
             </div>
-            <p className="text-lg font-semibold text-primary">{client.totalRevenue}</p>
+            <p className="text-lg font-semibold text-primary"><Money value={client.totalRevenue} /></p>
           </div>
         </div>
 

@@ -1,6 +1,7 @@
 "use client"
 
 import { Card } from "@/components/ui/card"
+import Money from "@/components/money"
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts"
 
 const fallbackData = [
@@ -46,7 +47,7 @@ export function RevenueChart({ data, totalAnnual, disableFallback }: { data?: { 
         <h3 className="text-lg font-semibold text-foreground">Aylık Kazanç Grafiği</h3>
         <div className="text-right">
           <p className="text-xs text-muted-foreground">Toplam Yıllık</p>
-          <p className="text-xl font-bold text-primary">₺{total.toLocaleString('tr-TR')}</p>
+          <p className="text-xl font-bold text-primary"><Money value={`₺${total.toLocaleString('tr-TR')}`} /></p>
         </div>
       </div>
       <div className="mt-6 h-[300px]">

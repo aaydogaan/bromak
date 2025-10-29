@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import Money from "@/components/money"
 
 type ClientRow = { name: string; projects: number; revenue: number; initials?: string }
 
@@ -37,7 +38,7 @@ export function TopClientsTable({ data }: { data?: ClientRow[] }) {
                   <p className="text-xs text-muted-foreground">{client.projects} proje</p>
                 )}
               </div>
-              <div className="text-sm font-medium">{tl(client.revenue)}</div>
+              <div className="text-sm font-medium"><Money value={tl(client.revenue)} /></div>
             </div>
           ))}
         </div>
