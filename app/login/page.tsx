@@ -164,7 +164,7 @@ export default function LoginPage() {
 
           {/* Alt Bilgi - Kartın içinde, formun altında */}
           <div className="mt-6 text-center space-y-1">
-            <p className="text-xs text-card-foreground/70">Bro&Mak Ajans Paneli v1.0</p>
+            <p className="text-xs text-card-foreground/70">Bro&Mak Ajans Paneli v1.1</p>
             <p className="text-xs text-card-foreground/60">
               Geliştirici{' '}
               <a href="https://www.instagram.com/recepaydogaann" target="_blank" rel="noreferrer" className="underline">
