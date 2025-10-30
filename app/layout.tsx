@@ -12,6 +12,12 @@ export const metadata: Metadata = {
   title: "Bro&Mak - Proje Yönetim Paneli",
   description: "Proje ve gelir yönetim sistemi",
   generator: "v0.app",
+  icons: {
+    icon: "/bromak-fav.png",
+    shortcut: "/bromak-fav.png",
+    apple: "/bromak-fav.png",
+  },
+  manifest: "/manifest.webmanifest",
 }
 
 export default function RootLayout({
