@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Money from "@/components/money"
 import { RevenueChart } from "@/components/revenue-chart"
 import { ProjectStatusChart } from "@/components/project-status-chart"
+import { PaymentsTable } from "@/components/payments-table"
 import { Pie, PieChart, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts"
 import { TopClientsTable } from "@/components/top-clients-table"
 import { PercentageCalculator } from "@/components/percentage-calculator"
@@ -253,6 +254,8 @@ export default function StatisticsPage() {
               </CardContent>
             </Card>
           </div>
+
+          <PaymentsTable />
 
           <TopClientsTable data={topClients ?? undefined} />
         </div>
