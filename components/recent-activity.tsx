@@ -1,6 +1,7 @@
 "use client"
 
 import { Card } from "@/components/ui/card"
+import { CheckCircle, Circle } from "lucide-react"
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 
@@ -8,6 +9,7 @@ interface UIEventMini {
   id: string
   title: string
   happenedAt: string
+  status?: 'planned' | 'in_progress' | 'done'
 }
 
 function timeAgo(dateIso: string): string {
@@ -31,11 +33,11 @@ export function RecentActivity() {
         const supabase = createClient()
         const { data, error } = await supabase
           .from('events')
-          .select('id, title, happened_at')
+          .select('id, title, happened_at, status')
           .order('happened_at', { ascending: false })
           .limit(5)
         if (error) throw error
-        setItems((data || []).map((e: any) => ({ id: String(e.id), title: e.title, happenedAt: e.happened_at })))
+        setItems((data || []).map((e: any) => ({ id: String(e.id), title: e.title, happenedAt: e.happened_at, status: e.status })))
       } catch (e) {
         console.error('Son olaylar yüklenirken hata:', e)
       }
@@ -50,7 +52,11 @@ export function RecentActivity() {
         {items.map((ev) => (
           <div key={ev.id} className="flex items-start gap-4">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-              <span className="text-primary text-sm font-semibold">E</span>
+              {ev.status === 'done' ? (
+                <CheckCircle className="h-5 w-5 text-green-600" />
+              ) : (
+                <Circle className="h-5 w-5 text-muted-foreground" />
+              )}
             </div>
             <div className="flex-1">
               <p className="text-sm font-medium text-foreground line-clamp-2">{ev.title}</p>

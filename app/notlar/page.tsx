@@ -2,7 +2,7 @@
 
 import { PageWrapper } from "@/components/page-wrapper"
 import { Button } from "@/components/ui/button"
-import { Plus, Search, Trash2 } from "lucide-react"
+import { Plus, Search, Trash2, CheckCircle, Circle } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { NoteCard } from "@/components/note-card"
 import { useEffect, useState } from "react"
@@ -57,6 +57,7 @@ export default function NotlarPage() {
   const [isAddEventOpen, setIsAddEventOpen] = useState(false)
   const [isAllEventsOpen, setIsAllEventsOpen] = useState(false)
   const [eventToDelete, setEventToDelete] = useState<UIEvent | null>(null)
+  const [eventToView, setEventToView] = useState<UIEvent | null>(null)
   const [eventForm, setEventForm] = useState<{ title: string; description: string; category: EventCategory; status: EventStatus; happenedAt: string }>({
     title: "",
     description: "",
@@ -87,6 +88,23 @@ export default function NotlarPage() {
             default:
               return 'from-slate-500/20 to-gray-500/20'
           }
+
+  const toggleEventDone = async (ev: UIEvent) => {
+    try {
+      const supabase = createClient()
+      const next: EventStatus = ev.status === 'done' ? 'planned' : 'done'
+      const { error } = await supabase
+        .from('events')
+        .update({ status: next })
+        .eq('id', ev.dbId)
+      if (error) throw error
+      setEvents((prev) => prev.map(e => e.dbId === ev.dbId ? { ...e, status: next } : e))
+      setEventToView((prev) => (prev && prev.dbId === ev.dbId ? { ...prev, status: next } : prev))
+    } catch (e) {
+      console.error('Olay güncellenirken hata:', e)
+      alert('Durum güncellenemedi.')
+    }
+  }
         }
 
         const formatted: UINote[] = (data || []).map((n: any, idx: number) => ({
@@ -171,6 +189,23 @@ export default function NotlarPage() {
     } catch (e) {
       console.error('Olay silinirken hata:', e)
       alert('Olay silinirken bir hata oluştu.')
+    }
+  }
+
+  const toggleEventDone = async (ev: UIEvent) => {
+    try {
+      const supabase = createClient()
+      const next: EventStatus = ev.status === 'done' ? 'planned' : 'done'
+      const { error } = await supabase
+        .from('events')
+        .update({ status: next })
+        .eq('id', ev.dbId)
+      if (error) throw error
+      setEvents((prev) => prev.map((e) => (e.dbId === ev.dbId ? { ...e, status: next } : e)))
+      setEventToView((prev) => (prev && prev.dbId === ev.dbId ? { ...prev, status: next } : prev))
+    } catch (e) {
+      console.error('Olay güncellenirken hata:', e)
+      alert('Durum güncellenemedi.')
     }
   }
 
@@ -291,6 +326,38 @@ export default function NotlarPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Olay Detayı Popup */}
+      <Dialog open={!!eventToView} onOpenChange={() => setEventToView(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {eventToView?.status === 'done' ? <CheckCircle className="h-4 w-4 text-green-600" /> : <Circle className="h-4 w-4 text-muted-foreground" />}
+              {eventToView?.title}
+            </DialogTitle>
+            <DialogDescription>
+              {eventToView ? new Date(eventToView.happenedAt).toLocaleString('tr-TR') : ''}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            {eventToView?.description && (
+              <p className="text-sm text-foreground whitespace-pre-wrap">{eventToView.description}</p>
+            )}
+            <div className="text-xs text-muted-foreground">Kategori: {eventToView?.category}</div>
+            <div className="text-xs text-muted-foreground">Durum: {eventToView?.status}</div>
+          </div>
+          <DialogFooter>
+            {!!eventToView && (
+              <>
+                <Button variant="outline" onClick={() => setEventToView(null)}>Kapat</Button>
+                <Button onClick={() => toggleEventDone(eventToView)}>
+                  {eventToView.status === 'done' ? 'Yapılmadı olarak işaretle' : 'Tamamlandı olarak işaretle'}
+                </Button>
+              </>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
         {/* İki sütun: Sol Olaylar, Sağ Notlar */}
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Sol: Olaylar */}
@@ -298,7 +365,11 @@ export default function NotlarPage() {
             <h2 className="text-xl font-semibold">Olaylar</h2>
             <div className="space-y-3">
               {events.slice(0, 5).map((ev) => (
-                <div key={ev.dbId} className="rounded-lg border bg-card p-4">
+                <div
+                  key={ev.dbId}
+                  className="rounded-lg border bg-card p-4 cursor-pointer hover:bg-accent/30 transition-colors"
+                  onClick={() => setEventToView(ev)}
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="font-medium text-foreground truncate">{ev.title}</p>
@@ -307,6 +378,13 @@ export default function NotlarPage() {
                       )}
                     </div>
                     <div className="flex items-center gap-2">
+                      <button
+                        className="rounded p-1 hover:bg-accent/50"
+                        aria-label={ev.status === 'done' ? 'Yapılmadı olarak işaretle' : 'Tamamlandı olarak işaretle'}
+                        onClick={(e) => { e.stopPropagation(); toggleEventDone(ev) }}
+                      >
+                        {ev.status === 'done' ? <CheckCircle className="h-5 w-5 text-green-600" /> : <Circle className="h-5 w-5 text-muted-foreground" />}
+                      </button>
                       <div className="text-xs text-muted-foreground">
                         {new Date(ev.happenedAt).toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' })}
                       </div>
@@ -314,7 +392,7 @@ export default function NotlarPage() {
                         variant="outline"
                         size="icon"
                         className="h-7 w-7 text-destructive hover:bg-destructive/10 bg-transparent border-destructive/30"
-                        onClick={() => setEventToDelete(ev)}
+                        onClick={(e) => { e.stopPropagation(); setEventToDelete(ev) }}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
