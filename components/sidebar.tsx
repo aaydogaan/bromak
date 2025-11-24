@@ -52,29 +52,12 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
         )}
       >
         <div className="flex h-full flex-col gap-6 p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full overflow-hidden border-2 border-primary/20">
-                  <img 
-                    src="/brodigital-logo.png" 
-                    alt="BroDigital Logo" 
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-                <div className="h-12 w-12">
-                  <img 
-                    src="/mak-logo.png" 
-                    alt="MAK Logo" 
-                    className="h-full w-full object-contain"
-                  />
-                </div>
-              </div>
-              <div>
-                <h1 className="text-lg font-semibold text-foreground">Bro&Mak</h1>
-                <p className="text-xs text-muted-foreground">Proje Yönetimi</p>
-              </div>
-            </div>
+          <div className="flex justify-center w-full mb-6">
+            <img 
+              src="/bromak.png" 
+              alt="Bromak Logo" 
+              className="h-14 w-auto object-contain"
+            />
             <button
               onClick={onClose}
               className="lg:hidden rounded-lg p-2 hover:bg-accent/50 transition-colors"

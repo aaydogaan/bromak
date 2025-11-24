@@ -108,8 +108,7 @@ export default function LoginPage() {
       >
         <CardHeader className="text-center space-y-2">
           <div className="flex items-center justify-center gap-4 mb-2">
-            <Image src="/brodigital-logo.png" alt="Bro Dijital" width={56} height={56} className="rounded-md object-contain" />
-            <Image src="/mak-logo.png" alt="Mak" width={56} height={56} className="rounded-md object-contain" />
+            <Image src="/bromak.png" alt="Bro Dijital" width={250} height={250} className="rounded-md object-contain" />
           </div>
           <CardTitle className="text    -3xl font-bold font-sans text-card-foreground">Bro&Mak Yönetim Paneli’ne Hoş Geldiniz</CardTitle>
           <CardDescription className="text-card-foreground/70 font-sans">

@@ -13,9 +13,19 @@ export const metadata: Metadata = {
   description: "Proje ve gelir yönetim sistemi",
   generator: "v0.app",
   icons: {
-    icon: "/bromak-fav.png",
-    shortcut: "/bromak-fav.png",
-    apple: "/bromak-fav.png",
+    icon: [
+      { url: '/bromak-favicon.png', type: 'image/png', sizes: '32x32' },
+      { url: '/bromak-favicon-192x192.png', type: 'image/png', sizes: '192x192' },
+      { url: '/bromak-favicon-512x512.png', type: 'image/png', sizes: '512x512' },
+    ],
+    apple: [
+      { url: '/bromak-favicon-180x180.png', type: 'image/png', sizes: '180x180' },
+    ],
+  },
+  appleWebApp: {
+    title: 'BroMak',
+    statusBarStyle: 'black-translucent',
+    startupImage: '/bromak-favicon-512x512.png',
   },
   manifest: "/manifest.webmanifest",
 }

@@ -1,18 +1,20 @@
 {
-  "name": "Bro&Mak",
-  "short_name": "Bro&Mak",
+  "name": "BroMak",
+  "short_name": "BroMak",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#0ea5e9",
+  "orientation": "portrait",
   "icons": [
     {
-      "src": "/bromak-fav.png",
+      "src": "/bromak-favicon-192x192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "/bromak-fav.png",
+      "src": "/bromak-favicon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

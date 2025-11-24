@@ -78,11 +78,8 @@ export default function ContractsPage() {
 
   const supabase = useMemo(() => createClient(), [])
 
-  const companyLogo = (name?: string | null): string => {
-    const n = (name || '').toLowerCase()
-    if (n.includes('mak')) return '/mak-logo.png'
-    if (n.includes('brodigital') || n.includes('brodi')) return '/brodigital-logo.png'
-    return '/mak-logo.png'
+  const companyLogo = (): string => {
+    return '/bromak.png'
   }
 
   useEffect(() => {
@@ -217,8 +214,7 @@ export default function ContractsPage() {
   }
 
   const handleDownload = (contract: UIContract) => {
-    const logoLeft = '/mak-logo.png'
-    const logoRight = '/brodigital-logo.png'
+    const logo = '/bromak.png'
     const amtDigits = (contract.amountText || '').replace(/[^0-9]/g, '')
     const formattedAmount = amtDigits ? new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(Number(amtDigits)) : (contract.amountText || '—')
     const html = `<!doctype html>
@@ -253,8 +249,7 @@ export default function ContractsPage() {
 </head>
 <body>
   <div class="header">
-    <img src="${logoLeft}" alt="MAK" />
-    <img src="${logoRight}" alt="Brodigital" />
+    <img src="${logo}" alt="Bromak" style="height: 40px;" />
   </div>
   <h1 class="title">${contract.title}</h1>
   <table class="meta">
@@ -640,9 +635,8 @@ export default function ContractsPage() {
               <div className="text-muted-foreground">İptal Koşulları</div>
               <div className="mt-1 whitespace-pre-wrap">{viewing?.cancellationTerms ?? '—'}</div>
             </div>
-            <div className="flex items-center justify-center gap-6 pt-12">
-              <img src="/brodigital-logo.png" alt="Brodigital" className="h-10 w-auto object-contain" />
-              <img src="/mak-logo.png" alt="Mak" className="h-10 w-auto object-contain" />
+            <div className="flex items-center justify-center pt-12">
+              <img src="/bromak.png" alt="Bromak" className="h-10 w-auto object-contain" />
             </div>
           </div>
           <DialogFooter>

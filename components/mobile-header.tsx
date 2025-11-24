@@ -11,26 +11,11 @@ export function MobileHeader({ onMenuClick }: MobileHeaderProps) {
     <header className="fixed top-0 left-0 right-0 z-30 lg:hidden glass-effect border-b border-border/50">
       <div className="flex items-center justify-between p-4">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full overflow-hidden border border-primary/20">
-              <img 
-                src="/brodigital-logo.png" 
-                alt="BroDigital Logo" 
-                className="h-full w-full object-cover"
-              />
-            </div>
-            <div className="h-10 w-10">
-              <img 
-                src="/mak-logo.png" 
-                alt="MAK Logo" 
-                className="h-full w-full object-contain"
-              />
-            </div>
-          </div>
-          <div>
-            <h1 className="text-base font-semibold text-foreground">Bro&Mak</h1>
-            <p className="text-xs text-muted-foreground">Proje Yönetimi</p>
-          </div>
+          <img 
+            src="/bromak.png" 
+            alt="Bromak Logo" 
+            className="h-10 w-auto object-contain"
+          />
         </div>
         <button
           onClick={onMenuClick}
