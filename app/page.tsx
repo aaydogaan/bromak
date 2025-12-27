@@ -195,6 +195,204 @@ export default function DashboardPage() {
     return `₺${n.toLocaleString('tr-TR')}`
   }
 
+  const celebrate = () => {
+    // Audio
+    try {
+      const audio = new Audio('/win-ses.mp3')
+      audio.volume = 0.6
+      // play might be blocked until user gesture; this is called from a click
+      audio.play().catch(() => {})
+    } catch (_) {}
+
+    // Container overlay
+    const container = document.createElement('div')
+    container.style.position = 'fixed'
+    container.style.inset = '0'
+    container.style.pointerEvents = 'none'
+    container.style.overflow = 'hidden'
+    container.style.zIndex = '9999'
+    document.body.appendChild(container)
+
+    // Fireworks canvas (transparent over page)
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')!
+    canvas.style.position = 'absolute'
+    canvas.style.inset = '0'
+    canvas.style.width = '100%'
+    canvas.style.height = '100%'
+    canvas.style.pointerEvents = 'none'
+    container.appendChild(canvas)
+
+    const resize = () => {
+      canvas.width = window.innerWidth
+      canvas.height = window.innerHeight
+    }
+    resize()
+    window.addEventListener('resize', resize)
+
+    const colors = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#22c55e', '#eab308', '#f97316', '#a855f7']
+
+    // Fireworks state
+    type FWParticle = { x: number; y: number; vx: number; vy: number; life: number; maxLife: number; color: string; size: number }
+    type Rocket = { x: number; y: number; vx: number; vy: number; peak: number; color: string }
+    const particles: FWParticle[] = []
+    const rockets: Rocket[] = []
+    const gravity = 0.07
+    const friction = 0.99
+    let rafId = 0
+    let start = performance.now()
+
+    const spawnRocket = () => {
+      const x = Math.random() * canvas.width
+      const y = canvas.height + 10
+      const vx = (Math.random() - 0.5) * 1.2
+      const vy = -(5 + Math.random() * 2)
+      const peak = 120 + Math.random() * 220
+      const color = colors[Math.floor(Math.random() * colors.length)]
+      rockets.push({ x, y, vx, vy, peak, color })
+    }
+
+    const explode = (x: number, y: number, color: string) => {
+      const count = 60 + Math.floor(Math.random() * 50)
+      for (let i = 0; i < count; i++) {
+        const angle = (Math.PI * 2 * i) / count + Math.random() * 0.4
+        const speed = 2 + Math.random() * 3.5
+        particles.push({
+          x,
+          y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          life: 40 + Math.floor(Math.random() * 25),
+          maxLife: 65,
+          color,
+          size: 2 + Math.random() * 2.5,
+        })
+      }
+    }
+
+    const tick = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+      // update rockets
+      for (let i = rockets.length - 1; i >= 0; i--) {
+        const r = rockets[i]
+        r.x += r.vx
+        r.y += r.vy
+        r.vy += gravity * 0.25
+        // explode conditions: reached peak height or starts falling
+        if (canvas.height - r.y > r.peak || r.vy >= 0) {
+          explode(r.x, r.y, r.color)
+          rockets.splice(i, 1)
+        } else {
+          // draw rocket glow
+          ctx.beginPath()
+          ctx.arc(r.x, r.y, 2.2, 0, Math.PI * 2)
+          ctx.fillStyle = r.color
+          ctx.fill()
+        }
+      }
+
+      // update particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i]
+        p.x += p.vx
+        p.y += p.vy
+        p.vx *= friction
+        p.vy = p.vy * friction + gravity
+        p.life -= 1
+        const alpha = Math.max(0, p.life / p.maxLife)
+        ctx.fillStyle = p.color + Math.round(alpha * 255).toString(16).padStart(2, '0')
+        // draw as rectangle spark
+        ctx.save()
+        ctx.translate(p.x, p.y)
+        ctx.rotate(((p.maxLife - p.life) / p.maxLife) * Math.PI)
+        ctx.globalAlpha = alpha
+        ctx.fillRect(-p.size * 0.5, -p.size * 0.5, p.size, p.size * 1.6)
+        ctx.restore()
+        if (p.life <= 0) particles.splice(i, 1)
+      }
+
+      const elapsed = performance.now() - start
+      // spawn rockets for ~10s
+      if (elapsed < 10000) {
+        // 1-3 rockets per frame with low probability, average ~6-8/sec
+        if (Math.random() < 0.18) spawnRocket()
+        if (Math.random() < 0.06) spawnRocket()
+      }
+
+      if (elapsed > 12000 && particles.length === 0 && rockets.length === 0) {
+        cancelAnimationFrame(rafId)
+        window.removeEventListener('resize', resize)
+        // canvas removed with container at the end
+        return
+      }
+      rafId = requestAnimationFrame(tick)
+    }
+
+    rafId = requestAnimationFrame(tick)
+
+    // Emitters across the viewport (confetti)
+    const emit = () => {
+      const burst = 90 + Math.floor(Math.random() * 60) // 90-150 pieces per burst
+      for (let i = 0; i < burst; i++) {
+        const piece = document.createElement('div')
+        piece.style.position = 'absolute'
+        // spawn from random point across viewport
+        const x = Math.random() * 100
+        const y = Math.random() * 30 + (Math.random() < 0.5 ? 0 : 70) // top 30% or bottom 30%
+        piece.style.left = `${x}vw`
+        piece.style.top = `${y}vh`
+
+        // random size and shape
+        const w = Math.random() * 10 + 4
+        const h = Math.random() * 18 + 6
+        const asCircle = Math.random() < 0.35
+        piece.style.width = `${w}px`
+        piece.style.height = `${h}px`
+        piece.style.background = colors[Math.floor(Math.random() * colors.length)]
+        piece.style.opacity = '0.95'
+        piece.style.borderRadius = asCircle ? '9999px' : '3px'
+        piece.style.transform = 'translate(-50%, -50%) rotate(0deg)'
+        piece.style.willChange = 'transform, opacity'
+        container.appendChild(piece)
+
+        // physics
+        const angle = Math.random() * Math.PI * 2
+        const distance = 400 + Math.random() * 520
+        const dx = Math.cos(angle) * distance
+        const dy = Math.sin(angle) * distance
+        const rotate = (Math.random() * 1440 - 720).toFixed(1)
+        const duration = 1500 + Math.random() * 1800 // 1.5s - 3.3s
+
+        piece.animate(
+          [
+            { transform: 'translate(-50%, -50%) rotate(0deg)', opacity: 1 },
+            { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) rotate(${rotate}deg)`, opacity: 0 }
+          ],
+          { duration, easing: 'cubic-bezier(0.16, 0.8, 0.2, 1)', fill: 'forwards' }
+        )
+
+        // auto remove each piece after animation
+        setTimeout(() => piece.remove(), Math.ceil(duration) + 60)
+      }
+    }
+
+    // Run confetti for ~10 seconds alongside fireworks
+    start = performance.now()
+    emit()
+    const interval = setInterval(() => {
+      if (performance.now() - start > 10000) {
+        clearInterval(interval)
+        // allow last particles to finish then cleanup container
+        window.removeEventListener('resize', resize)
+        cancelAnimationFrame(rafId)
+        setTimeout(() => container.remove(), 3500)
+        return
+      }
+      emit()
+    }, 300)
+  }
+
   return (
     <PageWrapper>
       <div className="p-4 md:p-8">
@@ -220,7 +418,10 @@ export default function DashboardPage() {
 
           <div className="grid gap-6 lg:grid-cols-3">
             <div className="lg:col-span-2">
-              <RevenueChart data={chartData ?? undefined} totalAnnual={chartData ? chartData.reduce((s, r) => s + r.revenue, 0) : undefined} />
+              <RevenueChart
+                data={chartData ?? undefined}
+                totalAnnual={chartData ? chartData.reduce((s, r) => s + r.revenue, 0) : undefined}
+              />
             </div>
             <div>
               <RecentActivity />
@@ -228,7 +429,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Motive Edici Söz */}
-          <div className="mt-12 text-center p-6 rounded-xl bg-gradient-to-r from-primary/10 to-secondary/10 border border-border/50">
+          <div className="mt-12 text-center p-6 rounded-xl bg-linear-to-r from-primary/10 to-secondary/10 border border-border/50">
             <blockquote className="text-lg italic text-foreground/90">
               "Başarı, küçük çabaların tekrarından başka bir şey değildir."
             </blockquote>
@@ -236,6 +437,12 @@ export default function DashboardPage() {
             <p className="mt-4 text-sm text-muted-foreground">
               Her gün küçük adımlarla büyük hedeflere ulaşabilirsiniz. Bugün atacağınız her adım, yarının başarısının temelini oluşturur.
             </p>
+            <button
+              onClick={celebrate}
+              className="mt-3 text-xs text-muted-foreground hover:text-primary underline underline-offset-4"
+            >
+              Kutla
+            </button>
           </div>
         </div>
       </div>
