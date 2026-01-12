@@ -219,7 +219,8 @@ export default function ExpensesPage() {
             "Tarih": new Date(e.date).toLocaleDateString('tr-TR'),
             "Kategori": e.category,
             "Açıklama": e.description || "-",
-            "Tutar (₺)": e.amount
+            "Tutar (₺)": e.amount,
+            "Belge / Dekont": e.attachment_url || "Belge Yok"
         }))
 
         const ws = XLSX.utils.json_to_sheet(data)
