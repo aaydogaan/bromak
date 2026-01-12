@@ -177,13 +177,13 @@ export default function ExpensesPage() {
     const categoryData = useMemo(() => {
         const cats: { [key: string]: number } = {}
         const palette: { [key: string]: string } = {
-            "Yakıt": "hsl(var(--primary))",
-            "Market": "hsl(var(--secondary))",
-            "Faturalar": "hsl(var(--destructive))",
-            "Kira": "hsl(var(--muted-foreground))",
-            "Yemek": "hsl(var(--accent))",
-            "Dijital (Freepik, Adobe)": "hsl(var(--primary))",
-            "Diğer": "hsl(var(--border))"
+            "Yakıt": "#f97316", // Orange
+            "Market": "#10b981", // Emerald
+            "Faturalar": "#3b82f6", // Blue
+            "Kira": "#8b5cf6", // Purple
+            "Yemek": "#f43f5e", // Rose
+            "Dijital (Freepik, Adobe)": "#6366f1", // Indigo
+            "Diğer": "#64748b" // Slate
         }
 
         filteredAndSortedExpenses.forEach(e => {
@@ -194,7 +194,7 @@ export default function ExpensesPage() {
         return Object.entries(cats).map(([name, value]) => ({
             name,
             value,
-            color: palette[name] || "hsl(var(--muted-foreground))"
+            color: palette[name] || "#94a3b8"
         }))
     }, [filteredAndSortedExpenses])
 
