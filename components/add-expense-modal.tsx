@@ -14,6 +14,7 @@ interface AddExpenseModalProps {
     open: boolean
     onOpenChange: (open: boolean) => void
     onSuccess: () => void
+    editData?: any
 }
 
 const CATEGORIES = [
@@ -26,7 +27,7 @@ const CATEGORIES = [
     "Diğer"
 ]
 
-export function AddExpenseModal({ open, onOpenChange, onSuccess }: AddExpenseModalProps) {
+export function AddExpenseModal({ open, onOpenChange, onSuccess, editData }: AddExpenseModalProps) {
     const [loading, setLoading] = useState(false)
     const [form, setForm] = useState({
         category: "",
@@ -37,6 +38,33 @@ export function AddExpenseModal({ open, onOpenChange, onSuccess }: AddExpenseMod
         installmentCurrent: "1",
     })
     const [file, setFile] = useState<File | null>(null)
+    const [previewAmount, setPreviewAmount] = useState("")
+
+    useState(() => {
+        if (editData) {
+            setForm({
+                category: editData.category || "",
+                amount: String(editData.amount || ""),
+                description: editData.description || "",
+                date: editData.date ? new Date(editData.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
+                installmentTotal: String(editData.installment_total || "1"),
+                installmentCurrent: String(editData.installment_current || "1"),
+            })
+            setPreviewAmount(formatAmount(String(editData.amount || "")))
+        }
+    })
+
+    function formatAmount(val: string) {
+        if (!val) return ""
+        const numeric = val.replace(/\D/g, "")
+        return Number(numeric).toLocaleString("tr-TR")
+    }
+
+    const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const raw = e.target.value.replace(/\D/g, "")
+        setForm({ ...form, amount: raw })
+        setPreviewAmount(formatAmount(raw))
+    }
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -53,7 +81,7 @@ export function AddExpenseModal({ open, onOpenChange, onSuccess }: AddExpenseMod
         setLoading(true)
         try {
             const supabase = createClient()
-            let attachmentUrl = ""
+            let attachmentUrl = editData?.attachment_url || ""
 
             if (file) {
                 const fileExt = file.name.split('.').pop()
@@ -73,7 +101,7 @@ export function AddExpenseModal({ open, onOpenChange, onSuccess }: AddExpenseMod
                 attachmentUrl = publicUrl
             }
 
-            const { error } = await supabase.from('expenses').insert({
+            const payload = {
                 category: form.category,
                 amount: parseFloat(form.amount),
                 description: form.description,
@@ -81,25 +109,33 @@ export function AddExpenseModal({ open, onOpenChange, onSuccess }: AddExpenseMod
                 attachment_url: attachmentUrl,
                 installment_total: parseInt(form.installmentTotal) || 1,
                 installment_current: parseInt(form.installmentCurrent) || 1,
-            })
+            }
 
-            if (error) throw error
+            if (editData) {
+                const { error } = await supabase.from('expenses').update(payload).eq('id', editData.id)
+                if (error) throw error
+            } else {
+                const { error } = await supabase.from('expenses').insert(payload)
+                if (error) throw error
+            }
 
             onSuccess()
             onOpenChange(false)
-            // Reset form
-            setForm({
-                category: "",
-                amount: "",
-                description: "",
-                date: new Date().toISOString().slice(0, 10),
-                installmentTotal: "1",
-                installmentCurrent: "1",
-            })
-            setFile(null)
+            if (!editData) {
+                setForm({
+                    category: "",
+                    amount: "",
+                    description: "",
+                    date: new Date().toISOString().slice(0, 10),
+                    installmentTotal: "1",
+                    installmentCurrent: "1",
+                })
+                setPreviewAmount("")
+                setFile(null)
+            }
         } catch (error) {
-            console.error('Gider ekleme hatası:', error)
-            alert('Gider eklenirken bir hata oluştu.')
+            console.error('Gider işlemi hatası:', error)
+            alert('Gider kaydedilirken bir hata oluştu.')
         } finally {
             setLoading(false)
         }
@@ -107,9 +143,9 @@ export function AddExpenseModal({ open, onOpenChange, onSuccess }: AddExpenseMod
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[600px] bg-white dark:bg-zinc-950 border-border shadow-2xl backdrop-blur-none">
                 <DialogHeader>
-                    <DialogTitle>Yeni Gider Ekle</DialogTitle>
+                    <DialogTitle>{editData ? "Gideri Düzenle" : "Yeni Gider Ekle"}</DialogTitle>
                     <DialogDescription>Harcama detaylarını ve varsa faturayı girin.</DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
@@ -131,11 +167,14 @@ export function AddExpenseModal({ open, onOpenChange, onSuccess }: AddExpenseMod
                             <Label htmlFor="amount">Tutar (₺)</Label>
                             <Input
                                 id="amount"
-                                type="number"
-                                placeholder="0.00"
-                                value={form.amount}
-                                onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                                type="text"
+                                inputMode="numeric"
+                                placeholder="0"
+                                value={previewAmount}
+                                onChange={handleAmountChange}
+                                className="font-bold text-lg"
                             />
+                            <p className="text-[10px] text-muted-foreground italic">* Sayıları düz yazın, sistem otomatik nokta koyar.</p>
                         </div>
                     </div>
 
