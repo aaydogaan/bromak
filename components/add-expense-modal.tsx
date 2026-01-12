@@ -20,7 +20,7 @@ interface AddExpenseModalProps {
 const CATEGORIES = [
     "Yakıt",
     "Market",
-    "Faturalar (Elektrik, dogalgaz, su,internet)",
+    "Faturalar",
     "Kira",
     "Yemek",
     "Dijital (Freepik, Adobe)",
@@ -56,14 +56,25 @@ export function AddExpenseModal({ open, onOpenChange, onSuccess, editData }: Add
 
     function formatAmount(val: string) {
         if (!val) return ""
-        const numeric = val.replace(/\D/g, "")
-        return Number(numeric).toLocaleString("tr-TR")
+        const [whole, decimal] = val.split(".")
+        const formattedWhole = Number(whole || 0).toLocaleString("tr-TR")
+        if (val.includes(".")) {
+            return formattedWhole + "," + (decimal || "")
+        }
+        return formattedWhole
     }
 
     const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const raw = e.target.value.replace(/\D/g, "")
-        setForm({ ...form, amount: raw })
-        setPreviewAmount(formatAmount(raw))
+        let val = e.target.value
+        // Replace dot with nothing (thousands) and comma with dot (decimal)
+        val = val.replace(/\./g, "").replace(/,/g, ".")
+
+        // Allow only digits and one dot with up to 2 decimal places
+        const regex = /^\d*\.?\d{0,2}$/
+        if (val === "" || regex.test(val)) {
+            setForm({ ...form, amount: val })
+            setPreviewAmount(formatAmount(val))
+        }
     }
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -174,7 +185,9 @@ export function AddExpenseModal({ open, onOpenChange, onSuccess, editData }: Add
                                 onChange={handleAmountChange}
                                 className="font-bold text-lg"
                             />
-                            <p className="text-[10px] text-muted-foreground italic">* Sayıları düz yazın, sistem otomatik nokta koyar.</p>
+                            <p className="text-[10px] text-muted-foreground mt-1">
+                                * Kuruş için virgül (,) kullanın. Örn: 1629,02
+                            </p>
                         </div>
                     </div>
 
