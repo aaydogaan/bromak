@@ -38,6 +38,7 @@ export default function ExpensesPage() {
     const [sortBy, setSortBy] = useState("date-desc")
     const [dateFilter, setDateFilter] = useState("all")
     const [searchQuery, setSearchQuery] = useState("")
+    const [showAll, setShowAll] = useState(false)
 
     const supabase = useMemo(() => createClient(), [])
 
@@ -119,6 +120,12 @@ export default function ExpensesPage() {
         return filtered
     }, [expenses, sortBy, dateFilter, searchQuery])
 
+    // List limiting (Pagination-like)
+    const visibleExpenses = useMemo(() => {
+        if (showAll) return filteredAndSortedExpenses
+        return filteredAndSortedExpenses.slice(0, 10)
+    }, [filteredAndSortedExpenses, showAll])
+
     // Stats based on filtered data
     const totalExpense = filteredAndSortedExpenses.reduce((s, e) => s + e.amount, 0)
 
@@ -145,6 +152,26 @@ export default function ExpensesPage() {
 
         return Object.values(months)
     }, [filteredAndSortedExpenses])
+
+    // MoM Calculation
+    const momChange = useMemo(() => {
+        const now = new Date()
+        const currentMonth = startOfMonth(now)
+        const lastMonth = startOfMonth(subMonths(now, 1))
+
+        const currentTotal = expenses.reduce((s, e) => {
+            const date = parseISO(e.date)
+            return isAfter(date, currentMonth) ? s + e.amount : s
+        }, 0)
+
+        const lastTotal = expenses.reduce((s, e) => {
+            const date = parseISO(e.date)
+            return (isAfter(date, lastMonth) && !isAfter(date, currentMonth)) ? s + e.amount : s
+        }, 0)
+
+        if (lastTotal === 0) return 0
+        return ((currentTotal - lastTotal) / lastTotal) * 100
+    }, [expenses])
 
     // Category Data
     const categoryData = useMemo(() => {
@@ -219,7 +246,7 @@ export default function ExpensesPage() {
                         </Button>
                     </div>
 
-                    <ExpenseStatsCards total={totalExpense} />
+                    <ExpenseStatsCards total={totalExpense} momChange={momChange} />
 
                     <div className="grid gap-6 lg:grid-cols-2">
                         <ExpenseChart data={chartData} total={totalExpense} />
@@ -300,7 +327,7 @@ export default function ExpensesPage() {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {filteredAndSortedExpenses.map((e) => (
+                                            {visibleExpenses.map((e) => (
                                                 <tr
                                                     key={e.id}
                                                     className="border-b border-border/50 hover:bg-muted/30 transition-colors cursor-pointer group"
@@ -352,6 +379,26 @@ export default function ExpensesPage() {
                                             ))}
                                         </tbody>
                                     </table>
+
+                                    {filteredAndSortedExpenses.length > 10 && (
+                                        <div className="flex justify-center pt-6 pb-2 border-t border-border/50">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="text-muted-foreground hover:text-primary transition-all gap-2"
+                                                onClick={() => setShowAll(!showAll)}
+                                            >
+                                                {showAll ? (
+                                                    "Daha Az Göster"
+                                                ) : (
+                                                    <>
+                                                        Tümünü Gör ({filteredAndSortedExpenses.length})
+                                                        <ArrowUpDown className="h-3 w-3" />
+                                                    </>
+                                                )}
+                                            </Button>
+                                        </div>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed rounded-xl">

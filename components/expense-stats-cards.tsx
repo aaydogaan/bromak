@@ -1,53 +1,77 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Banknote } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
 import Money from "@/components/money"
+import { TrendingDown, TrendingUp, Percent, Receipt } from "lucide-react"
 
 interface ExpenseStatsCardsProps {
     total: number
+    momChange?: number
+    expenseRatio?: number
 }
 
-export function ExpenseStatsCards({ total }: ExpenseStatsCardsProps) {
-    const tl = (n: number) => `₺${(n || 0).toLocaleString('tr-TR')}`
+export function ExpenseStatsCards({ total, momChange = 0, expenseRatio = 0 }: ExpenseStatsCardsProps) {
+    // 40/60 distribution
+    const share40 = total * 0.4
+    const share60 = total * 0.6
 
     return (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <Card className="glass-effect">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Toplam Gider</CardTitle>
-                    <Banknote className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-3xl font-extrabold tracking-tight text-destructive">
-                        <Money value={tl(total)} />
+        <div className="grid gap-4 md:grid-cols-3">
+            <Card className="glass-effect overflow-hidden relative group">
+                <div className="absolute right-0 top-0 p-4 opacity-10">
+                    <Receipt className="h-16 w-16" />
+                </div>
+                <CardContent className="p-6">
+                    <div className="flex flex-col gap-1">
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Toplam Gider</span>
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-3xl font-bold tracking-tight">
+                                <Money value={`₺${total.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`} />
+                            </span>
+                            {momChange !== 0 && (
+                                <div className={`flex items-center text-xs font-medium ${momChange < 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                    {momChange < 0 ? <TrendingDown className="h-3 w-3 mr-0.5" /> : <TrendingUp className="h-3 w-3 mr-0.5" />}
+                                    %{Math.abs(momChange).toFixed(1)}
+                                </div>
+                            )}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground mt-1.5 flex items-center">
+                            Seçili dönemdeki toplam harcama tutarı
+                        </p>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">Son 12 ayın toplam harcaması</p>
                 </CardContent>
             </Card>
 
-            <Card className="glass-effect overflow-hidden relative">
-                <div className="absolute top-0 left-0 w-1 h-full bg-blue-500" />
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">%40 Pay</CardTitle>
-                    <div className="text-xs font-bold text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded">%40</div>
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">
-                        <Money value={tl(total * 0.4)} />
+            <Card className="glass-effect border-l-4 border-l-primary/50">
+                <CardContent className="p-6">
+                    <div className="flex flex-col gap-1">
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Paylaşım (%40)</span>
+                        <span className="text-2xl font-bold text-primary">
+                            <Money value={`₺${share40.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`} />
+                        </span>
+                        <div className="flex items-center gap-1.5 mt-2">
+                            <div className="h-1.5 flex-1 bg-muted rounded-full overflow-hidden">
+                                <div className="h-full bg-primary" style={{ width: '40%' }}></div>
+                            </div>
+                            <span className="text-[10px] font-medium text-muted-foreground">%40</span>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
 
-            <Card className="glass-effect overflow-hidden relative">
-                <div className="absolute top-0 left-0 w-1 h-full bg-purple-500" />
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">%60 Pay</CardTitle>
-                    <div className="text-xs font-bold text-purple-500 bg-purple-500/10 px-2 py-0.5 rounded">%60</div>
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">
-                        <Money value={tl(total * 0.6)} />
+            <Card className="glass-effect border-l-4 border-l-secondary/50">
+                <CardContent className="p-6">
+                    <div className="flex flex-col gap-1">
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Paylaşım (%60)</span>
+                        <span className="text-2xl font-bold text-secondary">
+                            <Money value={`₺${share60.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`} />
+                        </span>
+                        <div className="flex items-center gap-1.5 mt-2">
+                            <div className="h-1.5 flex-1 bg-muted rounded-full overflow-hidden">
+                                <div className="h-full bg-secondary" style={{ width: '60%' }}></div>
+                            </div>
+                            <span className="text-[10px] font-medium text-muted-foreground">%60</span>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
