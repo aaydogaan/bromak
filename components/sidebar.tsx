@@ -16,6 +16,7 @@ import {
   Plus,
   X,
   StickyNote,
+  Banknote,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -23,6 +24,7 @@ const menuItems = [
   { href: "/", icon: LayoutDashboard, label: "Ana Sayfa" },
   { href: "/projeler", icon: FolderKanban, label: "Projeler" },
   { href: "/istatistikler", icon: BarChart3, label: "İstatistikler" },
+  { href: "/giderler", icon: Banknote, label: "Giderler" },
   { href: "/ekip", icon: Users, label: "Ekip" },
   { href: "/sozlesmeler", icon: FileText, label: "Sözleşmeler" },
   { href: "/musteriler", icon: UserCircle, label: "Müşteriler" },
@@ -53,9 +55,9 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       >
         <div className="flex h-full flex-col gap-6 p-6">
           <div className="flex justify-center w-full mb-6">
-            <img 
-              src="/bromak.png" 
-              alt="Bromak Logo" 
+            <img
+              src="/bromak.png"
+              alt="Bromak Logo"
               className="h-14 w-auto object-contain"
             />
             <button
@@ -92,10 +94,10 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           </nav>
 
           <Link href="/ekip">
-          <div className="rounded-xl bg-gradient-to-br from-primary/10 to-secondary/10 p-4">
-            <p className="text-xs font-medium text-muted-foreground">Toplam Ekip Üyesi</p>
-            <p className="mt-1 text-2xl font-bold text-foreground">3</p>
-          </div>
+            <div className="rounded-xl bg-gradient-to-br from-primary/10 to-secondary/10 p-4">
+              <p className="text-xs font-medium text-muted-foreground">Toplam Ekip Üyesi</p>
+              <p className="mt-1 text-2xl font-bold text-foreground">3</p>
+            </div>
           </Link>
 
           <button
