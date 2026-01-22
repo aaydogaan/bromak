@@ -44,7 +44,7 @@ export default function StatisticsPage() {
       // Projects for chart and totals
       const { data: projects, error } = await supabase
         .from('projects')
-        .select('budget, start_date, created_at, status, project_type, client')
+        .select('budget, start_date, payment_date, payment_amount, created_at, status, project_type, client')
         .order('start_date', { ascending: true })
       if (error) {
         console.error('istatistikler data err', error)
@@ -71,17 +71,19 @@ export default function StatisticsPage() {
       const statusCounts = new Map<string, number>()
       const typeSums = new Map<string, number>()
       const byClient = new Map<string, { sum: number; count: number }>()
-      for (const pr of (projects || []) as Array<{ budget: string | number | null; start_date: string | null; created_at?: string | null; status?: string; client?: string; project_type?: string }>) {
+      for (const pr of (projects || []) as Array<{ budget: string | number | null; start_date: string | null; payment_date?: string | null; payment_amount?: string | number | null; created_at?: string | null; status?: string; client?: string; project_type?: string }>) {
         // status counts
         const st = pr.status || 'unknown'
         statusCounts.set(st, (statusCounts.get(st) || 0) + 1)
-        // chart sums
-        const dateStr = pr.start_date || pr.created_at || null
+        // chart sums - use payment_date if available, otherwise fall back to start_date
+        const dateStr = pr.payment_date || pr.start_date || pr.created_at || null
         if (!dateStr) continue
         const d = new Date(dateStr)
         if (d < start12MonthsAgo) continue
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-        const raw = (typeof pr.budget === 'number' ? String(pr.budget) : String(pr.budget || '')).trim()
+        // Use payment_amount if available, otherwise fall back to budget
+        const amountSource = pr.payment_amount || pr.budget
+        const raw = (typeof amountSource === 'number' ? String(amountSource) : String(amountSource || '')).trim()
         if (!raw) continue
         const normalized = raw.replace(/[^0-9,.-]/g, '').replace(/\\./g, '').replace(',', '.')
         let val = parseFloat(normalized)
@@ -180,7 +182,7 @@ export default function StatisticsPage() {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             <Card className="glass-effect">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Yıllık Gelir</CardTitle>
+                <CardTitle className="text-sm font-medium">Yıllık Gelir</CardTitle>
                 <Banknote className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>

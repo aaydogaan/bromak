@@ -58,23 +58,23 @@ export default function DashboardPage() {
         // Projects in last 12 months (for chart)
         const projectsForChartPromise = supabase
           .from('projects')
-          .select('budget, start_date, status')
+          .select('budget, start_date, payment_date, payment_amount, status')
           .gte('start_date', start12MonthsAgo.toISOString())
           .order('start_date', { ascending: true })
 
-        // Projects started this month (budget sum for current month revenue)
+        // Projects with payment this month (for current month revenue)
         const projectsThisMonthPromise = supabase
           .from('projects')
-          .select('budget, start_date')
-          .gte('start_date', startOfMonth.toISOString())
-          .lt('start_date', startOfNextMonth.toISOString())
+          .select('budget, start_date, payment_date, payment_amount')
+          .or(`payment_date.gte.${startOfMonth.toISOString()},and(payment_date.is.null,start_date.gte.${startOfMonth.toISOString()})`)
+          .or(`payment_date.lt.${startOfNextMonth.toISOString()},and(payment_date.is.null,start_date.lt.${startOfNextMonth.toISOString()})`)
 
-        // Projects started last month (for trend)
+        // Projects with payment last month (for trend)
         const projectsLastMonthPromise = supabase
           .from('projects')
-          .select('budget, start_date')
-          .gte('start_date', startOfLastMonth.toISOString())
-          .lt('start_date', startOfMonth.toISOString())
+          .select('budget, start_date, payment_date, payment_amount')
+          .or(`payment_date.gte.${startOfLastMonth.toISOString()},and(payment_date.is.null,start_date.gte.${startOfLastMonth.toISOString()})`)
+          .or(`payment_date.lt.${startOfMonth.toISOString()},and(payment_date.is.null,start_date.lt.${startOfMonth.toISOString()})`)
 
         const [
           { count: custCount },
@@ -128,14 +128,16 @@ export default function DashboardPage() {
         }
 
         const sums = new Map<string, number>()
-        for (const pr of (projectsForChart || []) as Array<{ budget: string | number | null; start_date: string | null; status?: string }>) {
+        for (const pr of (projectsForChart || []) as Array<{ budget: string | number | null; start_date: string | null; payment_date?: string | null; payment_amount?: string | number | null; status?: string }>) {
           if (pr.status === 'cancelled') continue
-          const dateStr = pr.start_date
+          // Use payment_date if available, otherwise fall back to start_date
+          const dateStr = pr.payment_date || pr.start_date
           if (!dateStr) continue
           const d = new Date(dateStr)
           const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-          // parse budget (supports "12.500", "12,500", "12500 TL")
-          const raw = String(pr.budget ?? '').trim()
+          // Use payment_amount if available, otherwise fall back to budget
+          const amountSource = pr.payment_amount || pr.budget
+          const raw = String(amountSource ?? '').trim()
           if (!raw) continue
           const normalized = raw.replace(/[^0-9,.-]/g, '').replace(/\./g, '').replace(',', '.')
           const amt = parseFloat(normalized)
@@ -147,10 +149,11 @@ export default function DashboardPage() {
         const series: ChartRow[] = months.map((m) => ({ month: m.label, revenue: sums.get(m.key) || 0 }))
         setChartData(series)
 
-        // Current month revenue from projects budgets
+        // Current month revenue from projects
         const monthSum = (projectsThisMonth || []).reduce((acc: number, pr: any) => {
-          // budget metnini sayıya çevir (örn. "12.500" veya "12500 TL")
-          const raw = String(pr.budget ?? '').trim()
+          // Use payment_amount if available, otherwise fall back to budget
+          const amountSource = pr.payment_amount || pr.budget
+          const raw = String(amountSource ?? '').trim()
           if (!raw) return acc
           const normalized = raw.replace(/[^0-9,.-]/g, '').replace(/\./g, '').replace(',', '.')
           const val = parseFloat(normalized)
@@ -161,7 +164,8 @@ export default function DashboardPage() {
 
         // Last month revenue and trend
         const lastMonthSum = (projectsLastMonth || []).reduce((acc: number, pr: any) => {
-          const raw = String(pr.budget ?? '').trim()
+          const amountSource = pr.payment_amount || pr.budget
+          const raw = String(amountSource ?? '').trim()
           if (!raw) return acc
           const normalized = raw.replace(/[^0-9,.-]/g, '').replace(/\./g, '').replace(',', '.')
           const val = parseFloat(normalized)
@@ -201,8 +205,8 @@ export default function DashboardPage() {
       const audio = new Audio('/win-ses.mp3')
       audio.volume = 0.6
       // play might be blocked until user gesture; this is called from a click
-      audio.play().catch(() => {})
-    } catch (_) {}
+      audio.play().catch(() => { })
+    } catch (_) { }
 
     // Container overlay
     const container = document.createElement('div')

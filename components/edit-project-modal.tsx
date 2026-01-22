@@ -26,6 +26,8 @@ interface Project {
   start_date: string
   deadline: string
   image_url: string
+  payment_date?: string
+  payment_amount?: string
 }
 
 interface EditProjectModalProps {
@@ -45,10 +47,13 @@ export function EditProjectModal({ project, open, onOpenChange, onSuccess }: Edi
     location: '',
     start_date: '',
     deadline: '',
-    image_url: ''
+    image_url: '',
+    payment_date: '',
+    payment_amount: ''
   })
   const [startDate, setStartDate] = useState<Date | undefined>(project?.start_date ? new Date(project.start_date) : undefined)
   const [endDate, setEndDate] = useState<Date | undefined>(project?.deadline ? new Date(project.deadline) : undefined)
+  const [paymentDate, setPaymentDate] = useState<Date | undefined>(project?.payment_date ? new Date(project.payment_date) : undefined)
   const [loading, setLoading] = useState(false)
 
   // Proje değiştiğinde form verilerini güncelle
@@ -63,10 +68,13 @@ export function EditProjectModal({ project, open, onOpenChange, onSuccess }: Edi
         location: project.location || '',
         start_date: project.start_date,
         deadline: project.deadline,
-        image_url: project.image_url || ''
+        image_url: project.image_url || '',
+        payment_date: project.payment_date || '',
+        payment_amount: project.payment_amount || ''
       })
       setStartDate(project.start_date ? new Date(project.start_date) : undefined)
       setEndDate(project.deadline ? new Date(project.deadline) : undefined)
+      setPaymentDate(project.payment_date ? new Date(project.payment_date) : undefined)
     }
   }, [project])
 
@@ -88,21 +96,23 @@ export function EditProjectModal({ project, open, onOpenChange, onSuccess }: Edi
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!project) return
-    
+
     setLoading(true)
-    
+
     try {
       const { error } = await supabase
         .from('projects')
         .update({
           ...formData,
           start_date: startDate?.toISOString(),
-          deadline: endDate?.toISOString()
+          deadline: endDate?.toISOString(),
+          payment_date: paymentDate?.toISOString(),
+          payment_amount: formData.payment_amount
         })
         .eq('id', project.id)
 
       if (error) throw error
-      
+
       onSuccess()
       onOpenChange(false)
     } catch (error) {
@@ -121,7 +131,7 @@ export function EditProjectModal({ project, open, onOpenChange, onSuccess }: Edi
         <DialogHeader>
           <DialogTitle>Projeyi Düzenle</DialogTitle>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
             <div className="space-y-2">
@@ -259,6 +269,50 @@ export function EditProjectModal({ project, open, onOpenChange, onSuccess }: Edi
                 onChange={handleChange}
                 placeholder="https://example.com/image.jpg"
               />
+            </div>
+
+            {/* Ödeme Bilgileri Bölümü */}
+            <div className="border-t pt-4 mt-4">
+              <h3 className="text-sm font-semibold mb-4 text-muted-foreground">Ödeme Bilgileri</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Ödeme Tarihi</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn("w-full justify-start text-left font-normal", !paymentDate && "text-muted-foreground")}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {paymentDate ? format(paymentDate, "PPP", { locale: tr }) : <span>Ödeme tarihi seçin</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={paymentDate}
+                        onSelect={setPaymentDate}
+                        initialFocus
+                        locale={tr}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <p className="text-xs text-muted-foreground">Paranın gerçekten alındığı tarih</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="payment_amount">Ödeme Tutarı (₺)</Label>
+                  <Input
+                    id="payment_amount"
+                    name="payment_amount"
+                    type="number"
+                    value={formData.payment_amount}
+                    onChange={handleChange}
+                    placeholder="Alınan tutar"
+                  />
+                  <p className="text-xs text-muted-foreground">Boş bırakılırsa bütçe kullanılır</p>
+                </div>
+              </div>
             </div>
           </div>
 

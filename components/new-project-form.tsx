@@ -26,16 +26,19 @@ export function NewProjectForm() {
     location: '',
     start_date: '',
     deadline: '',
-    image_url: ''
+    image_url: '',
+    payment_date: '',
+    payment_amount: ''
   })
   const [loading, setLoading] = useState(false)
   const [startDate, setStartDate] = useState<Date>()
   const [endDate, setEndDate] = useState<Date>()
+  const [paymentDate, setPaymentDate] = useState<Date>()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    
+
     try {
       // Zorunlu alanları kontrol et
       if (!formData.name || !formData.client || !startDate) {
@@ -53,6 +56,8 @@ export function NewProjectForm() {
         start_date: startDate.toISOString(),
         deadline: endDate?.toISOString() || null,
         image_url: formData.image_url || null,
+        payment_date: paymentDate?.toISOString() || null,
+        payment_amount: formData.payment_amount || formData.budget,
         created_at: new Date().toISOString()
       }
 
@@ -109,54 +114,54 @@ export function NewProjectForm() {
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="name">Proje Adı *</Label>
-              <Input 
-                id="name" 
+              <Input
+                id="name"
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                placeholder="Örn: Turkish Airlines" 
-                required 
+                placeholder="Örn: Turkish Airlines"
+                required
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="client">Müşteri *</Label>
-              <Input 
-                id="client" 
+              <Input
+                id="client"
                 name="client"
                 value={formData.client}
                 onChange={handleChange}
-                placeholder="Müşteri adı girin" 
-                required 
+                placeholder="Müşteri adı girin"
+                required
               />
             </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="description">Proje Açıklaması</Label>
-            <Textarea 
-              id="description" 
+            <Textarea
+              id="description"
               name="description"
               value={formData.description}
               onChange={handleChange}
-              placeholder="Proje hakkında detaylı bilgi girin..." 
-              className="min-h-[100px]" 
+              placeholder="Proje hakkında detaylı bilgi girin..."
+              className="min-h-[100px]"
             />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="location">Lokasyon</Label>
-            <Input 
-              id="location" 
+            <Input
+              id="location"
               name="location"
               value={formData.location}
               onChange={handleChange}
-              placeholder="Projenin konumunu girin" 
+              placeholder="Projenin konumunu girin"
             />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="status">Durum *</Label>
-            <Select 
+            <Select
               value={formData.status}
               onValueChange={(value) => handleSelectChange('status', value as any)}
             >
@@ -200,24 +205,24 @@ export function NewProjectForm() {
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="budget">Bütçe (₺) *</Label>
-              <Input 
-                id="budget" 
+              <Input
+                id="budget"
                 name="budget"
-                type="number" 
+                type="number"
                 value={formData.budget}
                 onChange={handleChange}
-                placeholder="45000" 
-                required 
+                placeholder="45000"
+                required
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="image_url">Resim URL (Opsiyonel)</Label>
-              <Input 
-                id="image_url" 
+              <Input
+                id="image_url"
                 name="image_url"
                 value={formData.image_url}
                 onChange={handleChange}
-                placeholder="Firma Logosu" 
+                placeholder="Firma Logosu"
               />
             </div>
           </div>
@@ -267,9 +272,52 @@ export function NewProjectForm() {
         </CardContent>
       </Card>
 
+      <Card className="glass-effect">
+        <CardHeader>
+          <CardTitle>Ödeme Bilgileri</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Ödeme Tarihi</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal bg-transparent",
+                      !paymentDate && "text-muted-foreground",
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {paymentDate ? format(paymentDate, "PPP", { locale: tr }) : "Ödeme tarihi seçin"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar mode="single" selected={paymentDate} onSelect={setPaymentDate} initialFocus />
+                </PopoverContent>
+              </Popover>
+              <p className="text-xs text-muted-foreground">Paranın gerçekten alındığı tarih</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="payment_amount">Ödeme Tutarı (₺)</Label>
+              <Input
+                id="payment_amount"
+                name="payment_amount"
+                type="number"
+                value={formData.payment_amount}
+                onChange={handleChange}
+                placeholder="Alınan tutar"
+              />
+              <p className="text-xs text-muted-foreground">Boş bırakılırsa bütçe kullanılır</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="flex justify-end gap-4">
-        <Button 
-          type="button" 
+        <Button
+          type="button"
           variant="outline"
           onClick={() => window.history.back()}
         >
