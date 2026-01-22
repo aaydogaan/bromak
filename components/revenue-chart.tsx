@@ -21,10 +21,30 @@ const fallbackData = [
 
 const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
+    const data = payload[0].payload
+    const projects = data.projects || []
+
     return (
-      <div className="rounded-xl border border-border bg-card/95 p-3 shadow-lg backdrop-blur-sm">
-        <p className="text-xs text-muted-foreground">{payload[0].payload.month}</p>
-        <p className="text-base font-semibold text-primary">₺{Number(payload[0].value || 0).toLocaleString("tr-TR")}</p>
+      <div className="rounded-xl border border-border bg-card/95 p-3 shadow-lg backdrop-blur-sm max-w-xs">
+        <p className="text-xs text-muted-foreground mb-2">{data.month}</p>
+        <p className="text-base font-semibold text-primary mb-3">
+          Toplam: ₺{Number(payload[0].value || 0).toLocaleString("tr-TR")}
+        </p>
+
+        {projects.length > 0 && (
+          <div className="space-y-2 border-t border-border/50 pt-2">
+            <p className="text-[10px] font-medium text-muted-foreground uppercase">Projeler:</p>
+            {projects.map((project: any, idx: number) => (
+              <div key={idx} className="text-xs">
+                <p className="font-medium text-foreground">{project.name}</p>
+                <div className="flex justify-between items-center text-muted-foreground">
+                  <span>{project.client}</span>
+                  <span className="font-semibold text-primary">₺{project.amount.toLocaleString("tr-TR")}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     )
   }

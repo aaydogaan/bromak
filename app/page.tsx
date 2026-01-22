@@ -7,7 +7,11 @@ import { RecentActivity } from "@/components/recent-activity"
 import { Banknote, Users, FolderKanban } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
-type ChartRow = { month: string; revenue: number }
+type ChartRow = {
+  month: string
+  revenue: number
+  projects?: Array<{ name: string; client: string; amount: number }>
+}
 
 export default function DashboardPage() {
   const [monthRevenue, setMonthRevenue] = useState<number | null>(null)
@@ -58,7 +62,7 @@ export default function DashboardPage() {
         // Projects in last 12 months (for chart)
         const projectsForChartPromise = supabase
           .from('projects')
-          .select('budget, start_date, payment_date, payment_amount, status')
+          .select('name, client, budget, start_date, payment_date, payment_amount, status')
           .gte('start_date', start12MonthsAgo.toISOString())
           .order('start_date', { ascending: true })
 
@@ -128,7 +132,9 @@ export default function DashboardPage() {
         }
 
         const sums = new Map<string, number>()
-        for (const pr of (projectsForChart || []) as Array<{ budget: string | number | null; start_date: string | null; payment_date?: string | null; payment_amount?: string | number | null; status?: string }>) {
+        const projectsByMonth = new Map<string, Array<{ name: string; client: string; amount: number }>>()
+
+        for (const pr of (projectsForChart || []) as Array<{ name?: string; client?: string; budget: string | number | null; start_date: string | null; payment_date?: string | null; payment_amount?: string | number | null; status?: string }>) {
           if (pr.status === 'cancelled') continue
           // Use payment_date if available, otherwise fall back to start_date
           const dateStr = pr.payment_date || pr.start_date
@@ -142,11 +148,25 @@ export default function DashboardPage() {
           const normalized = raw.replace(/[^0-9,.-]/g, '').replace(/\./g, '').replace(',', '.')
           const amt = parseFloat(normalized)
           if (!Number.isFinite(amt)) continue
+
+          // Add to sums
           if (!sums.has(key)) sums.set(key, 0)
           sums.set(key, (sums.get(key) || 0) + amt)
+
+          // Add to projects list for this month
+          if (!projectsByMonth.has(key)) projectsByMonth.set(key, [])
+          projectsByMonth.get(key)!.push({
+            name: pr.name || 'İsimsiz Proje',
+            client: pr.client || 'Bilinmeyen Müşteri',
+            amount: amt
+          })
         }
 
-        const series: ChartRow[] = months.map((m) => ({ month: m.label, revenue: sums.get(m.key) || 0 }))
+        const series: ChartRow[] = months.map((m) => ({
+          month: m.label,
+          revenue: sums.get(m.key) || 0,
+          projects: projectsByMonth.get(m.key) || []
+        }))
         setChartData(series)
 
         // Current month revenue from projects

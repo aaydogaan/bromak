@@ -12,7 +12,11 @@ import { Banknote, FolderKanban } from "lucide-react"
 import { PageWrapper } from "@/components/page-wrapper"
 import { createClient } from "@/lib/supabase/client"
 
-type ChartRow = { month: string; revenue: number }
+type ChartRow = {
+  month: string
+  revenue: number
+  projects?: Array<{ name: string; client: string; amount: number }>
+}
 
 function mapType(t: string): string {
   switch (t) {
@@ -44,7 +48,7 @@ export default function StatisticsPage() {
       // Projects for chart and totals
       const { data: projects, error } = await supabase
         .from('projects')
-        .select('budget, start_date, payment_date, payment_amount, created_at, status, project_type, client')
+        .select('name, client, budget, start_date, payment_date, payment_amount, created_at, status, project_type')
         .order('start_date', { ascending: true })
       if (error) {
         console.error('istatistikler data err', error)
@@ -68,10 +72,12 @@ export default function StatisticsPage() {
       }
 
       const sums = new Map<string, number>()
+      const projectsByMonth = new Map<string, Array<{ name: string; client: string; amount: number }>>()
       const statusCounts = new Map<string, number>()
       const typeSums = new Map<string, number>()
       const byClient = new Map<string, { sum: number; count: number }>()
-      for (const pr of (projects || []) as Array<{ budget: string | number | null; start_date: string | null; payment_date?: string | null; payment_amount?: string | number | null; created_at?: string | null; status?: string; client?: string; project_type?: string }>) {
+
+      for (const pr of (projects || []) as Array<{ name?: string; client?: string; budget: string | number | null; start_date: string | null; payment_date?: string | null; payment_amount?: string | number | null; created_at?: string | null; status?: string; project_type?: string }>) {
         // status counts
         const st = pr.status || 'unknown'
         statusCounts.set(st, (statusCounts.get(st) || 0) + 1)
@@ -93,6 +99,14 @@ export default function StatisticsPage() {
         }
         if (!Number.isFinite(val)) continue
         sums.set(key, (sums.get(key) || 0) + val)
+
+        // Add to projects list for this month
+        if (!projectsByMonth.has(key)) projectsByMonth.set(key, [])
+        projectsByMonth.get(key)!.push({
+          name: pr.name || 'İsimsiz Proje',
+          client: pr.client || 'Bilinmeyen Müşteri',
+          amount: val
+        })
 
         // revenue by type
         const t = pr.project_type || 'diger'
@@ -122,7 +136,11 @@ export default function StatisticsPage() {
         }
       }
 
-      const series: ChartRow[] = months.map((m) => ({ month: m.label, revenue: sums.get(m.key) || 0 }))
+      const series: ChartRow[] = months.map((m) => ({
+        month: m.label,
+        revenue: sums.get(m.key) || 0,
+        projects: projectsByMonth.get(m.key) || []
+      }))
       setChartData(series)
       const total = series.reduce((a, b) => a + b.revenue, 0)
       setAnnualTotal(total)

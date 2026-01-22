@@ -6,7 +6,7 @@ import { ProjectDetailsModal } from "@/components/project-details-modal"
 import { EditProjectModal } from "@/components/edit-project-modal"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Plus, Search } from "lucide-react"
+import { Plus, Search, Calendar } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
 import { supabase } from "@/lib/supabase"
@@ -72,6 +72,7 @@ export default function ProjectsPage() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [sortBy, setSortBy] = useState<'deadline' | 'budget' | 'start_date'>('deadline')
+  const [monthFilter, setMonthFilter] = useState<string>("all")
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -83,7 +84,7 @@ export default function ProjectsPage() {
           .order('created_at', { ascending: false })
 
         if (error) throw error
-        
+
         setProjects(data || [])
         setFilteredProjects(data || [])
       } catch (error) {
@@ -96,18 +97,44 @@ export default function ProjectsPage() {
     fetchProjects()
   }, [])
 
+  // Generate last 12 months for filter
+  const monthOptions = useMemo(() => {
+    const options = [{ value: "all", label: "Tüm Aylar" }]
+    const now = new Date()
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      const label = d.toLocaleString('tr-TR', { month: 'long', year: 'numeric' })
+      options.push({ value: key, label: label.charAt(0).toUpperCase() + label.slice(1) })
+    }
+    return options
+  }, [])
+
   useEffect(() => {
-    if (searchQuery.trim() === '') {
-      setFilteredProjects(projects)
-    } else {
-      const filtered = projects.filter(project => 
+    let filtered = projects
+
+    // Search filter
+    if (searchQuery.trim() !== '') {
+      filtered = filtered.filter(project =>
         project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         project.client.toLowerCase().includes(searchQuery.toLowerCase()) ||
         project.location.toLowerCase().includes(searchQuery.toLowerCase())
       )
-      setFilteredProjects(filtered)
     }
-  }, [searchQuery, projects])
+
+    // Month filter (based on payment_date or start_date)
+    if (monthFilter !== "all") {
+      filtered = filtered.filter(project => {
+        const dateStr = (project as any).payment_date || project.start_date
+        if (!dateStr) return false
+        const d = new Date(dateStr)
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+        return key === monthFilter
+      })
+    }
+
+    setFilteredProjects(filtered)
+  }, [searchQuery, monthFilter, projects])
 
   // Robust budget parser (handles TL strings and commas)
   const parseBudget = (val?: string): number => {
@@ -158,7 +185,7 @@ export default function ProjectsPage() {
           .order('created_at', { ascending: false })
 
         if (error) throw error
-        
+
         setProjects(data || [])
         setFilteredProjects(data || [])
       } catch (error) {
@@ -171,15 +198,15 @@ export default function ProjectsPage() {
 
   const handleDelete = async (projectId: string) => {
     if (!confirm('Bu projeyi silmek istediğinize emin misiniz?')) return
-    
+
     try {
       const { error } = await supabase
         .from('projects')
         .delete()
         .eq('id', projectId)
-      
+
       if (error) throw error
-      
+
       // Remove the deleted project from the state
       setProjects(projects.filter(p => p.id !== projectId))
     } catch (error) {
@@ -218,6 +245,18 @@ export default function ProjectsPage() {
               </div>
               <div>
                 <select
+                  className="h-10 rounded-md border bg-background px-3 text-sm flex items-center gap-2"
+                  value={monthFilter}
+                  onChange={(e) => setMonthFilter(e.target.value)}
+                  aria-label="Ay Filtresi"
+                >
+                  {monthOptions.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <select
                   className="h-10 rounded-md border bg-background px-3 text-sm"
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as 'deadline' | 'budget' | 'start_date')}
@@ -240,14 +279,14 @@ export default function ProjectsPage() {
           {filteredProjects.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <p className="text-muted-foreground">
-                {searchQuery 
+                {searchQuery
                   ? 'Aramanızla eşleşen proje bulunamadı.'
                   : 'Henüz proje eklenmemiş.'
                 }
               </p>
               {searchQuery && (
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   className="mt-2"
                   onClick={() => setSearchQuery('')}
                 >
@@ -269,7 +308,7 @@ export default function ProjectsPage() {
                   description: project.description || '',
                   location: project.location || ''
                 }
-                
+
                 return (
                   <div key={project.id} className="h-full">
                     <ProjectCard
@@ -298,7 +337,7 @@ export default function ProjectsPage() {
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
       />
-      
+
       {editingProject && (
         <EditProjectModal
           project={editingProject}
