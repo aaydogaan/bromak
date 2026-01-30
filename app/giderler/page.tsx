@@ -182,7 +182,9 @@ export default function ExpensesPage() {
             "Faturalar": "#3b82f6", // Blue
             "Kira": "#8b5cf6", // Purple
             "Yemek": "#f43f5e", // Rose
-            "Dijital (Freepik, Adobe)": "#6366f1", // Indigo
+            "Dijital": "#6366f1", // Indigo
+            "Maaş": "#ec4899", // Pink
+            "Ekipman": "#14b8a6", // Teal
             "Diğer": "#64748b" // Slate
         }
 
@@ -207,7 +209,9 @@ export default function ExpensesPage() {
             "Faturalar": "bg-blue-500/10 text-blue-500 border-blue-500/20",
             "Kira": "bg-purple-500/10 text-purple-500 border-purple-500/20",
             "Yemek": "bg-rose-500/10 text-rose-500 border-rose-500/20",
-            "Dijital (Freepik, Adobe)": "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
+            "Dijital": "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
+            "Maaş": "bg-pink-500/10 text-pink-500 border-pink-500/20",
+            "Ekipman": "bg-teal-500/10 text-teal-500 border-teal-500/20",
             "Diğer": "bg-slate-500/10 text-slate-500 border-slate-500/20"
         }
         const key = cat.includes("Faturalar") ? "Faturalar" : cat

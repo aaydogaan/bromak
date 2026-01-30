@@ -23,7 +23,9 @@ const CATEGORIES = [
     "Faturalar",
     "Kira",
     "Yemek",
-    "Dijital (Freepik, Adobe)",
+    "Dijital",
+    "Maaş",
+    "Ekipman",
     "Diğer"
 ]
 

@@ -219,7 +219,9 @@ export default function FinancialAnalysisPage() {
             "Faturalar": "#3b82f6",
             "Kira": "#8b5cf6",
             "Yemek": "#f43f5e",
-            "Dijital (Freepik, Adobe)": "#6366f1",
+            "Dijital": "#6366f1",
+            "Maaş": "#ec4899",
+            "Ekipman": "#14b8a6",
             "Diğer": "#64748b"
         }
 
