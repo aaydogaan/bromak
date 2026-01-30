@@ -17,6 +17,7 @@ import {
   X,
   StickyNote,
   Banknote,
+  TrendingUp,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -24,6 +25,7 @@ const menuItems = [
   { href: "/", icon: LayoutDashboard, label: "Ana Sayfa" },
   { href: "/projeler", icon: FolderKanban, label: "Projeler" },
   { href: "/istatistikler", icon: BarChart3, label: "İstatistikler" },
+  { href: "/finans", icon: TrendingUp, label: "Finansal Analiz" },
   { href: "/giderler", icon: Banknote, label: "Giderler" },
   { href: "/ekip", icon: Users, label: "Ekip" },
   { href: "/sozlesmeler", icon: FileText, label: "Sözleşmeler" },
