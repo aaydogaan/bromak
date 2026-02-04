@@ -103,7 +103,7 @@ export async function sendLeaveNotification(leave: {
             </div>
             
             <p style="margin-top: 30px;">
-              <a href="http://localhost:3000/izinler" style="background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">İzinleri Görüntüle</a>
+              <a href="https://bromak.brodigitalmedia.com/izinler" style="background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">İzinleri Görüntüle</a>
             </p>
           </div>
           <div class="footer">
@@ -175,7 +175,7 @@ export async function sendProjectNotification(project: {
             </div>
             
             <p style="margin-top: 30px;">
-              <a href="http://localhost:3000" style="background: #f5576c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Projeleri Görüntüle</a>
+              <a href="https://bromak.brodigitalmedia.com" style="background: #f5576c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Projeleri Görüntüle</a>
             </p>
           </div>
           <div class="footer">
@@ -248,7 +248,7 @@ export async function sendExpenseNotification(expense: {
             </div>
             
             <p style="margin-top: 30px;">
-              <a href="http://localhost:3000/giderler" style="background: ${isIncome ? '#22c55e' : '#ef4444'}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Gelir/Giderleri Görüntüle</a>
+              <a href="https://bromak.brodigitalmedia.com/giderler" style="background: ${isIncome ? '#22c55e' : '#ef4444'}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Gelir/Giderleri Görüntüle</a>
             </p>
           </div>
           <div class="footer">
@@ -317,7 +317,7 @@ export async function sendWeeklySummary(summary: {
             </div>
             
             <p style="margin-top: 30px; text-align: center;">
-              <a href="http://localhost:3000" style="background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Dashboard'u Görüntüle</a>
+              <a href="https://bromak.brodigitalmedia.com" style="background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Dashboard'u Görüntüle</a>
             </p>
           </div>
           <div class="footer">
