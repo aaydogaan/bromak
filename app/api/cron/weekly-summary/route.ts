@@ -16,28 +16,40 @@ export async function GET(request: NextRequest) {
         const monthStart = startOfMonth(now)
         const monthEnd = endOfMonth(now)
 
-        // Get revenue data
-        const { data: revenueData } = await supabase
-            .from('revenue')
-            .select('amount, type')
+        // 1. Get Revenue (from Projects)
+        const { data: projectsData } = await supabase
+            .from('projects')
+            .select('budget, payment_amount, payment_date, start_date')
+            .neq('status', 'cancelled')
+
+        const totalRevenue = (projectsData || []).reduce((sum, project) => {
+            const dateStr = project.payment_date || project.start_date
+            if (!dateStr) return sum
+
+            const projectDate = new Date(dateStr)
+            if (projectDate >= monthStart && projectDate <= monthEnd) {
+                const amount = parseFloat(String(project.payment_amount || project.budget || '0').replace(/[^0-9.-]/g, ''))
+                return sum + amount
+            }
+            return sum
+        }, 0)
+
+        // 2. Get Expenses
+        const { data: expensesData } = await supabase
+            .from('expenses')
+            .select('amount, date')
             .gte('date', monthStart.toISOString())
             .lte('date', monthEnd.toISOString())
 
-        const totalRevenue = revenueData
-            ?.filter((r: any) => r.type === 'income')
-            .reduce((sum: number, r: any) => sum + r.amount, 0) || 0
+        const totalExpenses = (expensesData || []).reduce((sum, exp) => sum + (exp.amount || 0), 0)
 
-        const totalExpenses = revenueData
-            ?.filter((r: any) => r.type === 'expense')
-            .reduce((sum: number, r: any) => sum + r.amount, 0) || 0
-
-        // Get active projects
-        const { data: projects } = await supabase
+        // 3. Get Active Projects
+        const { data: activeProjects } = await supabase
             .from('projects')
             .select('id')
-            .eq('status', 'Devam Ediyor')
+            .eq('status', 'in_progress')
 
-        // Get leaves today
+        // 4. Get Leaves Today
         const { data: leaves } = await supabase
             .from('leave_records')
             .select('*')
@@ -49,14 +61,14 @@ export async function GET(request: NextRequest) {
             totalRevenue,
             totalExpenses,
             netProfit: totalRevenue - totalExpenses,
-            activeProjects: projects?.length || 0,
+            activeProjects: activeProjects?.length || 0,
             onLeaveToday: leaves?.length || 0,
         }
 
         const result = await sendWeeklySummary(summary)
 
         if (result.success) {
-            return NextResponse.json({ success: true, message: 'Weekly summary sent' })
+            return NextResponse.json({ success: true, message: 'Weekly summary sent', data: summary })
         } else {
             return NextResponse.json({ success: false, error: result.error }, { status: 500 })
         }
