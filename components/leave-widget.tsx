@@ -44,7 +44,7 @@ export function LeaveWidget({ leaves }: LeaveWidgetProps) {
     return (
         <Card className="glass-effect">
             <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-medium flex items-center gap-1.5">
+                <CardTitle className="text-sm font-medium flex items-center gap-1.5">
                     <Users className="h-3 w-3 text-muted-foreground" />
                     İzin Durumu
                 </CardTitle>
