@@ -79,6 +79,23 @@ export function NewProjectForm() {
         throw new Error('Veri kaydedilemedi. Lütfen tekrar deneyin.')
       }
 
+      // Send email notification
+      try {
+        await fetch('/api/email/project', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: formData.name,
+            customer_name: formData.client,
+            status: formData.status,
+            total_amount: parseFloat(formData.budget) || 0,
+          }),
+        })
+      } catch (emailError) {
+        console.error('Email notification error:', emailError)
+        // Don't block the main flow if email fails
+      }
+
       // Başarılı olduğunda projeler sayfasına yönlendir
       window.location.href = '/projeler'
     } catch (error) {

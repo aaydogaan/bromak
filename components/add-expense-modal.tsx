@@ -130,6 +130,24 @@ export function AddExpenseModal({ open, onOpenChange, onSuccess, editData }: Add
             } else {
                 const { error } = await supabase.from('expenses').insert(payload)
                 if (error) throw error
+
+                // Send email notification for new expenses only
+                try {
+                    await fetch('/api/email/expense', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            description: form.description || form.category,
+                            amount: parseFloat(form.amount),
+                            category: form.category,
+                            type: 'expense',
+                            date: form.date,
+                        }),
+                    })
+                } catch (emailError) {
+                    console.error('Email notification error:', emailError)
+                    // Don't block the main flow if email fails
+                }
             }
 
             onSuccess()

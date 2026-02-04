@@ -4,8 +4,10 @@ import { PageWrapper } from "@/components/page-wrapper"
 import { StatCard } from "@/components/stat-card"
 import { RevenueChart } from "@/components/revenue-chart"
 import { RecentActivity } from "@/components/recent-activity"
+import { LeaveWidget } from "@/components/leave-widget"
 import { Banknote, Users, FolderKanban } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
+import type { LeaveRecord } from "@/types/leave"
 
 type ChartRow = {
   month: string
@@ -23,6 +25,7 @@ export default function DashboardPage() {
   const [newCustomersThisMonth, setNewCustomersThisMonth] = useState<number | null>(null)
   const [newCustomersTrendText, setNewCustomersTrendText] = useState<string | undefined>(undefined)
   const [newCustomersTrendUp, setNewCustomersTrendUp] = useState<boolean | undefined>(undefined)
+  const [leaves, setLeaves] = useState<LeaveRecord[]>([])
 
   const supabase = useMemo(() => createClient(), [])
 
@@ -212,6 +215,24 @@ export default function DashboardPage() {
       }
     }
     fetchAll()
+  }, [supabase])
+
+  // Fetch leave records
+  useEffect(() => {
+    const fetchLeaves = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("leave_records")
+          .select("*")
+          .order("start_date", { ascending: false })
+
+        if (error) throw error
+        setLeaves(data || [])
+      } catch (error) {
+        console.error("Error fetching leaves:", error)
+      }
+    }
+    fetchLeaves()
   }, [supabase])
 
   const formatTL = (n: number | null) => {
@@ -447,7 +468,9 @@ export default function DashboardPage() {
                 totalAnnual={chartData ? chartData.reduce((s, r) => s + r.revenue, 0) : undefined}
               />
             </div>
-            <div>
+            <div className="space-y-6">
+              {/* Leave Widget - Compact */}
+              <LeaveWidget leaves={leaves} />
               <RecentActivity />
             </div>
           </div>

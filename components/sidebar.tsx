@@ -18,6 +18,7 @@ import {
   StickyNote,
   Banknote,
   TrendingUp,
+  Calendar,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -28,6 +29,7 @@ const menuItems = [
   { href: "/finans", icon: TrendingUp, label: "Finansal Analiz" },
   { href: "/giderler", icon: Banknote, label: "Giderler" },
   { href: "/ekip", icon: Users, label: "Ekip" },
+  { href: "/izinler", icon: Calendar, label: "İzin Takibi" },
   { href: "/sozlesmeler", icon: FileText, label: "Sözleşmeler" },
   { href: "/musteriler", icon: UserCircle, label: "Müşteriler" },
   { href: "/notlar", icon: StickyNote, label: "Notlar" },

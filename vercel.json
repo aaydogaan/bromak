@@ -1,0 +1,16 @@
+{
+    "crons": [
+        {
+            "path": "/api/cron/weekly-summary",
+            "schedule": "0 10 * * 1"
+        },
+        {
+            "path": "/api/cron/weekend-greeting",
+            "schedule": "0 18 * * 6"
+        },
+        {
+            "path": "/api/cron/evening-greeting",
+            "schedule": "0 19 * * 1-6"
+        }
+    ]
+}
