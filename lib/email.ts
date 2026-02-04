@@ -69,6 +69,7 @@ export async function sendLeaveNotification(leave: {
       <body>
         <div class="container">
           <div class="header">
+            <img src="https://bromak.brodigitalmedia.com/bromak.png" alt="Bromak Agency" style="width: 120px; margin-bottom: 20px;">
             <h1>🏖️ Yeni İzin Talebi</h1>
           </div>
           <div class="content">
@@ -147,6 +148,7 @@ export async function sendProjectNotification(project: {
       <body>
         <div class="container">
           <div class="header">
+            <img src="https://bromak.brodigitalmedia.com/bromak.png" alt="Bromak Agency" style="width: 120px; margin-bottom: 20px;">
             <h1>📁 Yeni Proje Eklendi</h1>
           </div>
           <div class="content">
@@ -222,6 +224,7 @@ export async function sendExpenseNotification(expense: {
       <body>
         <div class="container">
           <div class="header">
+            <img src="https://bromak.brodigitalmedia.com/bromak.png" alt="Bromak Agency" style="width: 120px; margin-bottom: 20px;">
             <h1>${isIncome ? '💰 Yeni Gelir Kaydı' : '💸 Yeni Gider Kaydı'}</h1>
           </div>
           <div class="content">
@@ -293,6 +296,7 @@ export async function sendWeeklySummary(summary: {
       <body>
         <div class="container">
           <div class="header">
+            <img src="https://bromak.brodigitalmedia.com/bromak.png" alt="Bromak Agency" style="width: 120px; margin-bottom: 20px;">
             <h1>📊 Haftalık Özet</h1>
             <p>Günaydın! İşte bu haftanın özeti:</p>
           </div>
@@ -355,6 +359,7 @@ export async function sendWeekendGreeting() {
       <body>
         <div class="container">
           <div class="header">
+            <img src="https://bromak.brodigitalmedia.com/bromak.png" alt="Bromak Agency" style="width: 120px; margin-bottom: 20px;">
             <h1>🎉 Hafta Sonu Geldi!</h1>
           </div>
           <div class="content">
@@ -401,6 +406,7 @@ export async function sendEveningGreeting() {
       <body>
         <div class="container">
           <div class="header">
+            <img src="https://bromak.brodigitalmedia.com/bromak.png" alt="Bromak Agency" style="width: 120px; margin-bottom: 20px;">
             <h1>🌙 İyi Akşamlar!</h1>
           </div>
           <div class="content">
