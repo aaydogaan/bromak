@@ -8,6 +8,7 @@ import { LeaveWidget } from "@/components/leave-widget"
 import { Banknote, Users, FolderKanban } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import type { LeaveRecord } from "@/types/leave"
+import { AIInsights } from "@/components/ai-insights"
 
 type ChartRow = {
   month: string
@@ -460,6 +461,8 @@ export default function DashboardPage() {
             <StatCard title="Yeni Müşteri (Bu Ay)" value={newCustomersThisMonth != null ? String(newCustomersThisMonth) : '—'} icon={Users} trend={newCustomersTrendText} trendUp={newCustomersTrendUp} />
             <StatCard title="Devam Eden Projeler" value={ongoingProjects != null ? String(ongoingProjects) : '—'} icon={FolderKanban} />
           </div>
+
+          <AIInsights />
 
           <div className="grid gap-6 lg:grid-cols-3">
             <div className="lg:col-span-2">

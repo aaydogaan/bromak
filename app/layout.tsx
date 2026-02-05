@@ -30,6 +30,8 @@ export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
 }
 
+import { AIChatbot } from "@/components/ai-chatbot"
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -39,7 +41,10 @@ export default function RootLayout({
     <html lang="tr">
       <body className={`${inter.className} font-sans antialiased`}>
         <MoneyVisibilityProvider>
-          <AuthGuard>{children}</AuthGuard>
+          <AuthGuard>
+            {children}
+            <AIChatbot />
+          </AuthGuard>
         </MoneyVisibilityProvider>
         <Analytics />
       </body>
