@@ -82,6 +82,7 @@ export function AddLeaveDialog({ open, onOpenChange, onSuccess, initialDate }: A
                         end_date: format(endDate, "yyyy-MM-dd"),
                         total_days: totalDays,
                         status,
+                        description: description || null,
                     }),
                 })
             } catch (emailError) {

@@ -47,6 +47,7 @@ export async function sendLeaveNotification(leave: {
   end_date: string
   total_days: number
   status: string
+  description?: string
 }) {
   const subject = `🏖️ Yeni İzin Talebi: ${leave.employee_name}`
 
@@ -57,9 +58,9 @@ export async function sendLeaveNotification(leave: {
         <style>
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .header { background: #e2150c; color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
           .content { background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; }
-          .info-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #667eea; }
+          .info-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #e2150c; }
           .info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }
           .info-label { font-weight: bold; color: #6b7280; }
           .info-value { color: #111827; }
@@ -69,12 +70,12 @@ export async function sendLeaveNotification(leave: {
       <body>
         <div class="container">
           <div class="header">
-            <img src="https://bromak.brodigitalmedia.com/bromak.png" alt="Bromak Agency" style="width: 120px; margin-bottom: 20px;">
-            <h1>🏖️ Yeni İzin Talebi</h1>
+            <img src="https://bromak.brodigitalmedia.com/bromak-beyaz-logo.png" alt="Bromak Agency" style="width: 120px; margin-bottom: 20px;">
+            <h1>🏖️ Yeni İzin Kaydı</h1>
           </div>
           <div class="content">
             <p>Merhaba,</p>
-            <p><strong>${leave.employee_name}</strong> yeni bir izin talebi oluşturdu.</p>
+            <p><strong>${leave.employee_name}</strong> bir izin oluşturdu.</p>
             
             <div class="info-box">
               <div class="info-row">
@@ -101,10 +102,16 @@ export async function sendLeaveNotification(leave: {
                 <span class="info-label">Durum:</span>
                 <span class="info-value">${leave.status === 'approved' ? '✅ Onaylandı' : leave.status === 'pending' ? '⏳ Beklemede' : '❌ İptal Edildi'}</span>
               </div>
+              ${leave.description ? `
+              <div class="info-row" style="border-bottom: none;">
+                <span class="info-label">Açıklama:</span>
+                <span class="info-value">${leave.description}</span>
+              </div>
+              ` : ''}
             </div>
             
             <p style="margin-top: 30px;">
-              <a href="https://bromak.brodigitalmedia.com/izinler" style="background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">İzinleri Görüntüle</a>
+              <a href="https://bromak.brodigitalmedia.com/izinler" style="background: #e2150c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">İzinleri Görüntüle</a>
             </p>
           </div>
           <div class="footer">
@@ -136,9 +143,9 @@ export async function sendProjectNotification(project: {
         <style>
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .header { background: #e2150c; color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
           .content { background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; }
-          .info-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f5576c; }
+          .info-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #e2150c; }
           .info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }
           .info-label { font-weight: bold; color: #6b7280; }
           .info-value { color: #111827; }
@@ -148,7 +155,7 @@ export async function sendProjectNotification(project: {
       <body>
         <div class="container">
           <div class="header">
-            <img src="https://bromak.brodigitalmedia.com/bromak.png" alt="Bromak Agency" style="width: 120px; margin-bottom: 20px;">
+            <img src="https://bromak.brodigitalmedia.com/bromak-beyaz-logo.png" alt="Bromak Agency" style="width: 120px; margin-bottom: 20px;">
             <h1>📁 Yeni Proje Eklendi</h1>
           </div>
           <div class="content">
@@ -211,20 +218,20 @@ export async function sendExpenseNotification(expense: {
         <style>
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, ${isIncome ? '#4ade80 0%, #22c55e 100%' : '#f87171 0%, #ef4444 100%'}); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .header { background: #e2150c; color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
           .content { background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; }
-          .info-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${isIncome ? '#22c55e' : '#ef4444'}; }
+          .info-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #e2150c; }
           .info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }
           .info-label { font-weight: bold; color: #6b7280; }
           .info-value { color: #111827; }
-          .amount { font-size: 24px; font-weight: bold; color: ${isIncome ? '#22c55e' : '#ef4444'}; }
+          .amount { font-size: 24px; font-weight: bold; color: #e2150c; }
           .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="header">
-            <img src="https://bromak.brodigitalmedia.com/bromak.png" alt="Bromak Agency" style="width: 120px; margin-bottom: 20px;">
+            <img src="https://bromak.brodigitalmedia.com/bromak-beyaz-logo.png" alt="Bromak Agency" style="width: 120px; margin-bottom: 20px;">
             <h1>${isIncome ? '💰 Yeni Gelir Kaydı' : '💸 Yeni Gider Kaydı'}</h1>
           </div>
           <div class="content">
@@ -251,7 +258,7 @@ export async function sendExpenseNotification(expense: {
             </div>
             
             <p style="margin-top: 30px;">
-              <a href="https://bromak.brodigitalmedia.com/giderler" style="background: ${isIncome ? '#22c55e' : '#ef4444'}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Gelir/Giderleri Görüntüle</a>
+              <a href="https://bromak.brodigitalmedia.com/giderler" style="background: #e2150c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Gelir/Giderleri Görüntüle</a>
             </p>
           </div>
           <div class="footer">
@@ -284,11 +291,11 @@ export async function sendWeeklySummary(summary: {
         <style>
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .header { background: #e2150c; color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
           .content { background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; }
           .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0; }
           .stat-card { background: white; padding: 20px; border-radius: 8px; text-align: center; border: 2px solid #e5e7eb; }
-          .stat-value { font-size: 28px; font-weight: bold; color: #667eea; margin: 10px 0; }
+          .stat-value { font-size: 28px; font-weight: bold; color: #e2150c; margin: 10px 0; }
           .stat-label { color: #6b7280; font-size: 14px; }
           .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; }
         </style>
@@ -296,7 +303,7 @@ export async function sendWeeklySummary(summary: {
       <body>
         <div class="container">
           <div class="header">
-            <img src="https://bromak.brodigitalmedia.com/bromak.png" alt="Bromak Agency" style="width: 120px; margin-bottom: 20px;">
+            <img src="https://bromak.brodigitalmedia.com/bromak-beyaz-logo.png" alt="Bromak Agency" style="width: 120px; margin-bottom: 20px;">
             <h1>📊 Haftalık Özet</h1>
             <p>Günaydın! İşte bu haftanın özeti:</p>
           </div>
@@ -321,7 +328,7 @@ export async function sendWeeklySummary(summary: {
             </div>
             
             <p style="margin-top: 30px; text-align: center;">
-              <a href="https://bromak.brodigitalmedia.com" style="background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Dashboard'u Görüntüle</a>
+              <a href="https://bromak.brodigitalmedia.com" style="background: #e2150c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Dashboard'u Görüntüle</a>
             </p>
           </div>
           <div class="footer">
@@ -349,7 +356,7 @@ export async function sendWeekendGreeting() {
         <style>
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: white; padding: 50px 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .header { background: #e2150c; color: white; padding: 50px 30px; text-align: center; border-radius: 10px 10px 0 0; }
           .content { background: #f9fafb; padding: 40px 30px; border-radius: 0 0 10px 10px; text-align: center; }
           .emoji { font-size: 64px; margin: 20px 0; }
           .message { font-size: 18px; color: #374151; margin: 20px 0; }
@@ -359,7 +366,7 @@ export async function sendWeekendGreeting() {
       <body>
         <div class="container">
           <div class="header">
-            <img src="https://bromak.brodigitalmedia.com/bromak.png" alt="Bromak Agency" style="width: 120px; margin-bottom: 20px;">
+            <img src="https://bromak.brodigitalmedia.com/bromak-beyaz-logo.png" alt="Bromak Agency" style="width: 120px; margin-bottom: 20px;">
             <h1>🎉 Hafta Sonu Geldi!</h1>
           </div>
           <div class="content">
@@ -396,7 +403,7 @@ export async function sendEveningGreeting() {
         <style>
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 50px 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .header { background: #e2150c; color: white; padding: 50px 30px; text-align: center; border-radius: 10px 10px 0 0; }
           .content { background: #f9fafb; padding: 40px 30px; border-radius: 0 0 10px 10px; text-align: center; }
           .emoji { font-size: 64px; margin: 20px 0; }
           .message { font-size: 18px; color: #374151; margin: 20px 0; }
@@ -406,7 +413,7 @@ export async function sendEveningGreeting() {
       <body>
         <div class="container">
           <div class="header">
-            <img src="https://bromak.brodigitalmedia.com/bromak.png" alt="Bromak Agency" style="width: 120px; margin-bottom: 20px;">
+            <img src="https://bromak.brodigitalmedia.com/bromak-beyaz-logo.png" alt="Bromak Agency" style="width: 120px; margin-bottom: 20px;">
             <h1>🌙 İyi Akşamlar!</h1>
           </div>
           <div class="content">
