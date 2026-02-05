@@ -81,13 +81,21 @@ export function NewProjectForm() {
 
       // Send email notification
       try {
+        const statusMap = {
+          'planning': 'Planlama',
+          'in_progress': 'Devam Ediyor',
+          'on_hold': 'Beklemede',
+          'completed': 'Tamamlandı',
+          'cancelled': 'İptal Edildi'
+        }
+
         await fetch('/api/email/project', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             name: formData.name,
             customer_name: formData.client,
-            status: formData.status,
+            status: statusMap[formData.status] || formData.status,
             total_amount: parseFloat(formData.budget) || 0,
           }),
         })

@@ -173,10 +173,19 @@ export async function sendProjectNotification(project: {
               </div>
               <div class="info-row">
                 <span class="info-label">Durum:</span>
-                <span class="info-value">${project.status}</span>
+                <span class="info-value">${(() => {
+      const statusMap: { [key: string]: string } = {
+        'planning': 'Planlama',
+        'in_progress': 'Devam Ediyor',
+        'on_hold': 'Beklemede',
+        'completed': 'Tamamlandı',
+        'cancelled': 'İptal Edildi'
+      }
+      return statusMap[project.status] || project.status
+    })()}</span>
               </div>
               ${project.total_amount ? `
-              <div class="info-row">
+              <div class="info-row" style="border-bottom: none;">
                 <span class="info-label">Tutar:</span>
                 <span class="info-value">₺${project.total_amount.toLocaleString('tr-TR')}</span>
               </div>

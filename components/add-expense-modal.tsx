@@ -133,7 +133,8 @@ export function AddExpenseModal({ open, onOpenChange, onSuccess, editData }: Add
 
                 // Send email notification for new expenses only
                 try {
-                    await fetch('/api/email/expense', {
+                    console.log('Sending expense email notification...')
+                    const emailRes = await fetch('/api/email/expense', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -144,6 +145,8 @@ export function AddExpenseModal({ open, onOpenChange, onSuccess, editData }: Add
                             date: form.date,
                         }),
                     })
+                    const emailResult = await emailRes.json()
+                    console.log('Expense email result:', emailResult)
                 } catch (emailError) {
                     console.error('Email notification error:', emailError)
                     // Don't block the main flow if email fails
