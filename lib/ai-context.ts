@@ -31,20 +31,21 @@ export async function getBromakContext() {
     const completedProjectsCount = projects?.filter(p => p.status === 'completed').length || 0
 
     const totalRevenue = (projects || []).reduce((sum, p) => {
-        const amount = parseFloat(String(p.payment_amount || p.budget || '0').replace(/[^0-9.-]/g, ''))
+        const rawValue = String(p.payment_amount || p.budget || '0').replace(/[^0-9.-]/g, '')
+        const amount = parseFloat(rawValue) || 0
         return sum + amount
     }, 0)
 
-    const totalExpenses = (expenses || []).reduce((sum, e) => sum + (e.amount || 0), 0)
+    const totalExpenses = (expenses || []).reduce((sum, e) => sum + (Number(e.amount) || 0), 0)
 
     return {
         summary: {
             totalProjects: projects?.length || 0,
             activeProjects: activeProjectsCount,
             completedProjects: completedProjectsCount,
-            totalRevenue,
-            totalExpenses,
-            netProfit: totalRevenue - totalExpenses,
+            totalRevenue: totalRevenue || 0,
+            totalExpenses: totalExpenses || 0,
+            netProfit: (totalRevenue || 0) - (totalExpenses || 0),
             onLeaveCount: leaves?.length || 0
         },
         projects: projects?.map(p => ({

@@ -2,18 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { OpenRouter } from '@openrouter/sdk'
 import { getBromakContext } from '@/lib/ai-context'
 
-const openRouter = new OpenRouter({
-    apiKey: process.env.OPENROUTER_API_KEY || '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',
-})
-
-const headers = {
-    'HTTP-Referer': 'https://bromak.brodigitalmedia.com',
-    'X-Title': 'Bromak Management System',
-}
-
-
 export async function POST(request: NextRequest) {
     try {
+        const apiKey = process.env.OPENROUTER_API_KEY
+        if (!apiKey) {
+            console.error('OPENROUTER_API_KEY is missing from environment variables')
+            return NextResponse.json({ error: 'API Anahtarı bulunamadı.' }, { status: 500 })
+        }
+
+        const openRouter = new OpenRouter({ apiKey })
+
         const { messages } = await request.json()
         const context = await getBromakContext()
 
@@ -47,17 +45,30 @@ export async function POST(request: NextRequest) {
     `
 
         const response = await openRouter.chat.send({
-            model: 'google/gemini-2.0-flash-001', // High performance and cost effective
+            model: 'google/gemini-2.0-flash-001',
             messages: [
                 { role: 'system', content: systemPrompt },
                 ...messages
             ],
-        }, { headers })
+        }, {
+            headers: {
+                'HTTP-Referer': 'https://bromak.brodigitalmedia.com',
+                'X-Title': 'Bromak Management System',
+            }
+        })
 
         const aiMessage = response.choices[0].message
         return NextResponse.json(aiMessage)
-    } catch (error) {
-        console.error('AI Chat Error:', error)
-        return NextResponse.json({ error: 'AI asistanı şu an yanıt veremiyor.' }, { status: 500 })
+    } catch (error: any) {
+        console.error('AI Chat Error Details:', {
+            message: error?.message,
+            statusCode: error?.statusCode,
+            body: error?.body,
+            stack: error?.stack
+        })
+        return NextResponse.json({
+            error: 'AI asistanı şu an yanıt veremiyor.',
+            details: error?.message
+        }, { status: 500 })
     }
 }

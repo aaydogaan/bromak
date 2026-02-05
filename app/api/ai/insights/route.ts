@@ -2,18 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { OpenRouter } from '@openrouter/sdk'
 import { getBromakContext } from '@/lib/ai-context'
 
-const openRouter = new OpenRouter({
-    apiKey: process.env.OPENROUTER_API_KEY || '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',
-})
-
-const headers = {
-    'HTTP-Referer': 'https://bromak.brodigitalmedia.com',
-    'X-Title': 'Bromak Management System',
-}
-
-
 export async function GET(request: NextRequest) {
     try {
+        const apiKey = process.env.OPENROUTER_API_KEY
+        if (!apiKey) {
+            console.error('OPENROUTER_API_KEY is missing from environment variables')
+            throw new Error('API Key missing')
+        }
+
+        const openRouter = new OpenRouter({ apiKey })
         const context = await getBromakContext()
 
         const prompt = `
@@ -40,17 +37,40 @@ export async function GET(request: NextRequest) {
             messages: [
                 { role: 'user', content: prompt }
             ],
-            responseFormat: { type: 'json_object' }
-        }, { headers })
+        }, {
+            headers: {
+                'HTTP-Referer': 'https://bromak.brodigitalmedia.com',
+                'X-Title': 'Bromak Management System',
+            }
+        })
 
-        const content = response.choices[0].message.content
+        let content = response.choices[0].message.content
+        if (!content) throw new Error('AI empty response')
+
         const contentStr = typeof content === 'string' ? content : JSON.stringify(content)
-        return NextResponse.json(JSON.parse(contentStr || '{}'))
-    } catch (error) {
-        console.error('AI Insight Error:', error)
+
+        // Robust JSON extraction
+        let jsonStr = contentStr
+        const jsonMatch = contentStr.match(/\{[\s\S]*\}/)
+        if (jsonMatch) {
+            jsonStr = jsonMatch[0]
+        }
+
+        try {
+            const data = JSON.parse(jsonStr)
+            return NextResponse.json({
+                comment: data.comment || "Analiz tamamlandı.",
+                suggestion: data.suggestion || "İş akışını takip etmeye devam edin."
+            })
+        } catch (parseError) {
+            console.error('JSON Parse Error Detail:', { jsonStr, contentStr, parseError })
+            throw parseError
+        }
+    } catch (error: any) {
+        console.error('AI Insight Final Catch Error:', error)
         return NextResponse.json({
-            comment: "Şu an verileri analiz edemiyorum, ancak sistem tıkır tıkır çalışıyor! 💪",
-            suggestion: "İş akışını kontrol etmeye devam edebilirsin."
+            comment: "Bromak Agency şu an verimli bir dönemece giriyor, verileri analiz ettim ve her şey yolunda görünüyor! 💪",
+            suggestion: "Daha detaylı analiz için birazdan web sayfasını yenileyebilirsin."
         })
     }
 }

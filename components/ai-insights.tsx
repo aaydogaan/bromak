@@ -32,23 +32,24 @@ export function AIInsights() {
     }, [])
 
     return (
-        <Card className="overflow-hidden border-none bg-gradient-to-br from-zinc-900 via-zinc-900 to-[#e2150c]/5 shadow-xl ring-1 ring-white/10">
-            <CardHeader className="pb-2">
+        <Card className="overflow-hidden border border-zinc-200/50 bg-white/70 backdrop-blur-xl shadow-sm hover:shadow-md transition-all duration-300">
+            <CardHeader className="pb-3 border-b border-zinc-100 bg-zinc-50/50">
                 <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-medium text-zinc-400 flex items-center gap-2">
-                        <Sparkles className="h-4 w-4 text-[#e2150c]" />
+                    <CardTitle className="text-sm font-semibold text-zinc-800 flex items-center gap-2 uppercase tracking-tight">
+                        <Sparkles className="h-4 w-4 text-[#e2150c] animate-pulse" />
                         AI Analizi & Önerisi
                     </CardTitle>
                     <button
                         onClick={fetchInsight}
                         disabled={loading}
-                        className="text-zinc-500 hover:text-white transition-colors disabled:opacity-50"
+                        className="p-1.5 rounded-full hover:bg-zinc-200/50 text-zinc-500 hover:text-zinc-800 transition-all active:scale-95 disabled:opacity-50"
+                        title="Analizi Yenile"
                     >
-                        <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
+                        <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
                     </button>
                 </div>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="pt-5 pb-6">
                 <AnimatePresence mode="wait">
                     {loading ? (
                         <motion.div
@@ -56,27 +57,35 @@ export function AIInsights() {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="space-y-2 py-2"
+                            className="space-y-4"
                         >
-                            <div className="h-4 w-full bg-white/5 animate-pulse rounded" />
-                            <div className="h-4 w-3/4 bg-white/5 animate-pulse rounded" />
+                            <div className="space-y-2">
+                                <div className="h-4 w-full bg-zinc-100 animate-pulse rounded-full" />
+                                <div className="h-4 w-5/6 bg-zinc-100 animate-pulse rounded-full" />
+                            </div>
+                            <div className="h-12 w-full bg-zinc-50 border border-zinc-100 animate-pulse rounded-xl" />
                         </motion.div>
                     ) : (
                         <motion.div
                             key="content"
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="space-y-4"
+                            className="space-y-5"
                         >
-                            <p className="text-sm text-zinc-200 leading-relaxed italic">
-                                "{insight?.comment}"
-                            </p>
+                            <div className="relative">
+                                <span className="absolute -left-2 -top-1 text-4xl text-zinc-100 font-serif pointer-events-none">“</span>
+                                <p className="text-[15px] font-medium text-zinc-700 leading-relaxed pl-4 relative">
+                                    {insight?.comment}
+                                </p>
+                            </div>
 
-                            <div className="flex items-start gap-3 rounded-lg bg-[#e2150c]/10 p-3 ring-1 ring-[#e2150c]/20">
-                                <Lightbulb className="h-4 w-4 text-[#e2150c] shrink-0 mt-0.5" />
+                            <div className="flex items-start gap-3.5 rounded-2xl bg-[#e2150c]/5 p-4 border border-[#e2150c]/10 group hover:border-[#e2150c]/20 transition-colors">
+                                <div className="h-8 w-8 rounded-full bg-white shadow-sm border border-[#e2150c]/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                                    <Lightbulb className="h-4 w-4 text-[#e2150c]" />
+                                </div>
                                 <div className="space-y-1">
-                                    <p className="text-xs font-semibold text-[#e2150c] uppercase tracking-wider">Tavsiye</p>
-                                    <p className="text-xs text-zinc-300">
+                                    <p className="text-[10px] font-bold text-[#e2150c] uppercase tracking-[0.1em]">AI Stratejik Öneri</p>
+                                    <p className="text-sm text-zinc-600 font-medium">
                                         {insight?.suggestion}
                                     </p>
                                 </div>

@@ -59,112 +59,141 @@ export function AIChatbot() {
     return (
         <>
             {/* Floating Button */}
-            <Button
-                onClick={() => setIsOpen(true)}
-                className={cn(
-                    "fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-2xl transition-all duration-300 z-50",
-                    "bg-[#e2150c] hover:bg-[#c4120a] group",
-                    isOpen && "scale-0 opacity-0"
-                )}
+            <motion.div
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                className="fixed bottom-6 right-6 z-50"
             >
-                <Sparkles className="h-6 w-6 text-white group-hover:scale-110 transition-transform" />
-            </Button>
+                <Button
+                    onClick={() => setIsOpen(true)}
+                    className={cn(
+                        "h-14 w-14 rounded-full shadow-[0_8px_30px_rgb(226,21,12,0.3)] transition-all duration-500",
+                        "bg-[#e2150c] hover:bg-[#c4120a] group",
+                        isOpen && "scale-0 opacity-0"
+                    )}
+                >
+                    <Sparkles className="h-6 w-6 text-white group-hover:rotate-12 transition-transform" />
+                </Button>
+            </motion.div>
 
             {/* Chat Window */}
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                        className="fixed bottom-6 right-6 w-[400px] h-[600px] bg-zinc-950 border border-white/10 rounded-2xl shadow-2xl flex flex-col z-[51] overflow-hidden"
+                        initial={{ opacity: 0, y: 40, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 40, scale: 0.95 }}
+                        className="fixed bottom-6 right-6 w-[400px] h-[600px] bg-white border border-zinc-200 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] flex flex-col z-[51] overflow-hidden"
                     >
                         {/* Header */}
-                        <div className="p-4 bg-gradient-to-r from-[#e2150c] to-[#c4120a] flex items-center justify-between">
+                        <div className="px-6 py-5 bg-gradient-to-br from-[#e2150c] to-[#c4120a] flex items-center justify-between shadow-lg">
                             <div className="flex items-center gap-3">
-                                <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-md">
-                                    <Bot className="h-5 w-5 text-white" />
+                                <div className="h-10 w-10 rounded-2xl bg-white/20 flex items-center justify-center backdrop-blur-md border border-white/20">
+                                    <Bot className="h-6 w-6 text-white" />
                                 </div>
                                 <div>
-                                    <h3 className="text-sm font-bold text-white">Bromak AI Asistan</h3>
-                                    <p className="text-[10px] text-white/70">Çevrimiçi | Tüm verilere hakim</p>
+                                    <h3 className="text-sm font-bold text-white tracking-tight">Bromak AI Asistan</h3>
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                        <p className="text-[10px] font-medium text-white/80">Canlı Destek Sistemi</p>
+                                    </div>
                                 </div>
                             </div>
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-8 w-8 text-white hover:bg-white/10"
+                                className="h-8 w-8 text-white hover:bg-white/20 rounded-full transition-colors"
                                 onClick={() => setIsOpen(false)}
                             >
                                 <X className="h-5 w-5" />
                             </Button>
                         </div>
 
-                        {/* Messages */}
+                        {/* Messages Area */}
                         <div
                             ref={scrollRef}
-                            className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-white/10"
+                            className="flex-1 overflow-y-auto p-6 space-y-6 bg-zinc-50/30 scroll-smooth"
                         >
                             {messages.map((msg, i) => (
-                                <div key={i} className={cn(
-                                    "flex items-start gap-2 max-w-[85%]",
-                                    msg.role === 'user' ? "ml-auto flex-row-reverse" : "mr-auto"
-                                )}>
+                                <motion.div
+                                    key={i}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className={cn(
+                                        "flex flex-col gap-1.5 max-w-[85%]",
+                                        msg.role === 'user' ? "ml-auto items-end" : "mr-auto items-start"
+                                    )}
+                                >
                                     <div className={cn(
-                                        "h-8 w-8 rounded-full flex items-center justify-center shrink-0",
-                                        msg.role === 'user' ? "bg-zinc-800" : "bg-[#e2150c]/10 border border-[#e2150c]/20"
+                                        "flex items-center gap-2 mb-0.5",
+                                        msg.role === 'user' ? "flex-row-reverse" : "flex-row"
                                     )}>
-                                        {msg.role === 'user' ? <User className="h-4 w-4 text-zinc-400" /> : <Bot className="h-4 w-4 text-[#e2150c]" />}
+                                        <div className={cn(
+                                            "h-5 w-5 rounded-md flex items-center justify-center",
+                                            msg.role === 'user' ? "bg-zinc-200" : "bg-[#e2150c]/10"
+                                        )}>
+                                            {msg.role === 'user' ? <User className="h-3 w-3 text-zinc-500" /> : <Bot className="h-3 w-3 text-[#e2150c]" />}
+                                        </div>
+                                        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+                                            {msg.role === 'user' ? 'Siz' : 'Bromak AI'}
+                                        </span>
                                     </div>
                                     <div className={cn(
-                                        "p-3 rounded-2xl text-sm leading-relaxed",
+                                        "px-4 py-3 rounded-2xl text-[13px] leading-relaxed shadow-sm",
                                         msg.role === 'user'
-                                            ? "bg-[#e2150c] text-white rounded-tr-none"
-                                            : "bg-zinc-900 text-zinc-200 border border-white/5 rounded-tl-none shadow-sm"
+                                            ? "bg-[#e2150c] text-white rounded-tr-none font-medium"
+                                            : "bg-white text-zinc-700 border border-zinc-100 rounded-tl-none"
                                     )}>
                                         {msg.content}
                                     </div>
-                                </div>
+                                </motion.div>
                             ))}
                             {loading && (
-                                <div className="flex items-start gap-2 mr-auto max-w-[85%]">
-                                    <div className="h-8 w-8 rounded-full bg-[#e2150c]/10 border border-[#e2150c]/20 flex items-center justify-center">
-                                        <Loader2 className="h-4 w-4 text-[#e2150c] animate-spin" />
-                                    </div>
-                                    <div className="p-3 rounded-2xl bg-zinc-900 border border-white/5 rounded-tl-none">
-                                        <div className="flex gap-1">
-                                            <span className="dot bg-zinc-500 w-1 h-1 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                                            <span className="dot bg-zinc-500 w-1 h-1 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                                            <span className="dot bg-zinc-500 w-1 h-1 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                                <div className="flex flex-col gap-1.5 mr-auto max-w-[85%]">
+                                    <div className="flex items-center gap-2 mb-0.5">
+                                        <div className="h-5 w-5 rounded-md bg-[#e2150c]/10 flex items-center justify-center">
+                                            <Loader2 className="h-3 w-3 text-[#e2150c] animate-spin" />
                                         </div>
+                                        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Bromak AI Düşünüyor...</span>
+                                    </div>
+                                    <div className="px-5 py-4 rounded-2xl bg-white border border-zinc-100 rounded-tl-none shadow-sm flex gap-1.5">
+                                        <span className="w-1.5 h-1.5 bg-[#e2150c]/40 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                        <span className="w-1.5 h-1.5 bg-[#e2150c]/40 rounded-full animate-bounce" style={{ animationDelay: '200ms' }} />
+                                        <span className="w-1.5 h-1.5 bg-[#e2150c]/40 rounded-full animate-bounce" style={{ animationDelay: '400ms' }} />
                                     </div>
                                 </div>
                             )}
                         </div>
 
-                        {/* Footer */}
-                        <div className="p-4 border-t border-white/10 bg-zinc-900/50">
+                        {/* Input Footer */}
+                        <div className="px-6 py-6 bg-white border-t border-zinc-100">
                             <form
                                 onSubmit={(e) => { e.preventDefault(); handleSend(); }}
-                                className="flex gap-2"
+                                className="relative flex items-center group"
                             >
                                 <Input
                                     value={input}
                                     onChange={(e) => setInput(e.target.value)}
-                                    placeholder="Bir soru sor..."
-                                    className="bg-zinc-950 border-white/10 focus:border-[#e2150c] transition-colors h-10 text-xs"
+                                    placeholder="Nasıl yardımcı olabilirim?"
+                                    className={cn(
+                                        "pl-5 pr-14 h-14 bg-zinc-50 border-zinc-200 text-zinc-800 rounded-2xl focus:bg-white focus:border-[#e2150c] focus:ring-4 focus:ring-[#e2150c]/5 transition-all duration-300 placeholder:text-zinc-400 font-medium",
+                                        "shadow-inner"
+                                    )}
                                 />
                                 <Button
                                     type="submit"
                                     disabled={!input.trim() || loading}
-                                    className="bg-[#e2150c] hover:bg-[#c4120a] h-10 w-10 p-0"
+                                    className="absolute right-2 h-10 w-10 p-0 bg-[#e2150c] hover:bg-[#c4120a] rounded-xl shadow-lg shadow-[#e2150c]/20 hover:scale-105 active:scale-95 transition-all text-white disabled:bg-zinc-200 disabled:shadow-none"
                                 >
-                                    <Send className="h-4 w-4 text-white" />
+                                    <Send className="h-4 w-4" />
                                 </Button>
                             </form>
-                            <p className="text-[10px] text-zinc-500 mt-2 text-center">
-                                Gemini 2.0 Flash tarafından güçlendirilmiştir.
-                            </p>
+                            <div className="flex items-center justify-center gap-1.5 mt-4">
+                                <Sparkles className="h-3 w-3 text-zinc-300" />
+                                <p className="text-[10px] font-bold text-zinc-300 uppercase tracking-[0.2em]">Powered by Gemini 2.0</p>
+                            </div>
                         </div>
                     </motion.div>
                 )}
