@@ -462,8 +462,6 @@ export default function DashboardPage() {
             <StatCard title="Devam Eden Projeler" value={ongoingProjects != null ? String(ongoingProjects) : '—'} icon={FolderKanban} />
           </div>
 
-          <AIInsights />
-
           <div className="grid gap-6 lg:grid-cols-3">
             <div className="lg:col-span-2">
               <RevenueChart
@@ -472,6 +470,8 @@ export default function DashboardPage() {
               />
             </div>
             <div className="space-y-6">
+              {/* AI Insights - Compact */}
+              <AIInsights />
               {/* Leave Widget - Compact */}
               <LeaveWidget leaves={leaves} />
               <RecentActivity />

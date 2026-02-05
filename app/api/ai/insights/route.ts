@@ -13,24 +13,128 @@ export async function GET(request: NextRequest) {
         const openRouter = new OpenRouter({ apiKey })
         const context = await getBromakContext()
 
-        const prompt = `
-      Bromak Agency'nin finansal ve operasyonel verilerini analiz et ve kısa, etkileyici bir "AI Yorumu" oluştur. 
-      Sadece 2-3 cümlelik çok kısa bir özet ve bir de "AI Önerisi" ver.
-      
-      Veriler:
-      - Aktif Projeler: ${context.summary.activeProjects}
-      - Bu Ayki Gelir: ₺${context.summary.totalRevenue.toLocaleString('tr-TR')}
-      - Bu Ayki Gider: ₺${context.summary.totalExpenses.toLocaleString('tr-TR')}
-      - Net Kar: ₺${context.summary.netProfit.toLocaleString('tr-TR')}
-      - İzin Durumu: ${context.summary.onLeaveCount} kişi izinde/yakında izne çıkacak.
+        // Get insight type from query params
+        const { searchParams } = new URL(request.url)
+        const type = searchParams.get('type') || 'general'
 
-      Yanıtın şu formatta olsun:
-      {
-        "comment": "AI yorumu buraya",
-        "suggestion": "AI önerisi buraya"
-      }
-      Teknik bir dilden ziyade, motive edici ve akıllı bir asistan dili kullan. Türkçe olsun.
-    `
+        let prompt = ''
+
+        switch (type) {
+            case 'expenses':
+                prompt = `
+                Sen bir finans danışmanısın. Bromak Agency'nin gider yapısını DETAYLI analiz et.
+                
+                VERİLER:
+                - Bu Ayki Toplam Gider: ₺${context.summary.totalExpenses.toLocaleString('tr-TR')}
+                - Net Kar: ₺${context.summary.netProfit.toLocaleString('tr-TR')}
+                - Kategorilere Göre Giderler: ${JSON.stringify(context.expensesByCategory)}
+                - Son 10 Gider: ${JSON.stringify(context.recentExpenses)}
+                
+                GÖREVLER:
+                1. En yüksek gider kategorisini belirle ve yüzdesini hesapla
+                2. Gereksiz veya optimize edilebilir giderleri tespit et
+                3. Gider/gelir oranını değerlendir (ideal %60-70 arası)
+                4. Tekrarlayan giderlerdeki anomalileri bul
+                5. Somut tasarruf önerileri sun (rakamlarla)
+                
+                ÇIKTI FORMATI:
+                {
+                  "comment": "3-4 cümlelik DETAYLI analiz. Rakamlar, yüzdeler ve spesifik kategoriler içermeli. Örnek: 'Bu ay toplam gideriniz ₺X olup, bunun %Y'si Z kategorisinde. Geçen aya göre %W artış var.'",
+                  "suggestion": "SOMUT ve UYGULANABILIR öneri. Genel değil spesifik olmalı. Örnek: 'X kategorisindeki giderleri %15 azaltarak aylık ₺Y tasarruf edebilirsiniz. Özellikle Z harcamasını gözden geçirin.'"
+                }
+                
+                Türkçe, profesyonel ve sayılarla desteklenmiş bir analiz yap.
+                `
+                break
+
+            case 'projects':
+                prompt = `
+                Sen bir proje yönetimi uzmanısın. Bromak Agency'nin proje portföyünü DETAYLI analiz et.
+                
+                VERİLER:
+                - Toplam Proje: ${context.summary.totalProjects}
+                - Aktif Proje: ${context.summary.activeProjects}
+                - Tamamlanan Proje: ${context.summary.completedProjects}
+                - Proje Detayları: ${JSON.stringify(context.projects)}
+                - Çalışan Sayısı: ${context.summary.totalEmployees}
+                
+                GÖREVLER:
+                1. Proje tamamlanma oranını hesapla ve yorumla
+                2. Çalışan başına düşen proje sayısını değerlendir (ideal: 2-3 aktif proje/kişi)
+                3. Proje sürelerini analiz et (geciken var mı?)
+                4. Müşteri dağılımını incele (tek müşteriye bağımlılık riski)
+                5. Kapasite kullanımını değerlendir
+                
+                ÇIKTI FORMATI:
+                {
+                  "comment": "3-4 cümlelik DETAYLI analiz. Tamamlanma oranı, çalışan başına proje, süre analizleri içermeli. Örnek: 'Toplam X projeden %Y'si tamamlanmış. Çalışan başına Z proje düşüyor, bu ideal seviyenin W'sinde.'",
+                  "suggestion": "SOMUT proje yönetimi önerisi. Örnek: 'Aktif proje sayısını 2 azaltarak ekip verimliliğini %20 artırabilirsiniz. X müşterisine bağımlılığı azaltmak için yeni müşteri kazanımına odaklanın.'"
+                }
+                
+                Türkçe, profesyonel ve metriklerle desteklenmiş bir analiz yap.
+                `
+                break
+
+            case 'revenue':
+                prompt = `
+                Sen bir iş geliştirme danışmanısın. Bromak Agency'nin gelir durumunu DETAYLI analiz et.
+                
+                VERİLER:
+                - Bu Ayki Gelir: ₺${context.summary.totalRevenue.toLocaleString('tr-TR')}
+                - Bu Ayki Gider: ₺${context.summary.totalExpenses.toLocaleString('tr-TR')}
+                - Net Kar: ₺${context.summary.netProfit.toLocaleString('tr-TR')}
+                - Aktif Proje: ${context.summary.activeProjects}
+                - Tamamlanan Proje: ${context.summary.completedProjects}
+                - Proje Detayları: ${JSON.stringify(context.projects)}
+                
+                GÖREVLER:
+                1. Kar marjını hesapla ve yorumla (ideal: %30-40)
+                2. Proje başına ortalama geliri hesapla
+                3. Gelir çeşitliliğini değerlendir
+                4. Büyüme potansiyelini analiz et
+                5. Fiyatlandırma stratejisini gözden geçir
+                
+                ÇIKTI FORMATI:
+                {
+                  "comment": "3-4 cümlelik DETAYLI analiz. Kar marjı, proje başına gelir, trend analizleri içermeli. Örnek: 'Bu ay ₺X gelir elde ettiniz, kar marjınız %Y. Proje başına ortalama ₺Z gelir elde ediyorsunuz.'",
+                  "suggestion": "SOMUT gelir artırma stratejisi. Örnek: 'Proje fiyatlarınızı %10 artırarak aylık ₺X ek gelir sağlayabilirsiniz. Premium paket sunarak müşteri başına geliri ₺Y artırın.'"
+                }
+                
+                Türkçe, profesyonel ve finansal metriklerle desteklenmiş bir analiz yap.
+                `
+                break
+
+            default: // general
+                prompt = `
+                Sen Bromak Agency'nin stratejik iş danışmanısın. Şirketin genel durumunu DETAYLI analiz et.
+                
+                VERİLER:
+                - Aktif Proje: ${context.summary.activeProjects}
+                - Toplam Gelir: ₺${context.summary.totalRevenue.toLocaleString('tr-TR')}
+                - Toplam Gider: ₺${context.summary.totalExpenses.toLocaleString('tr-TR')}
+                - Net Kar: ₺${context.summary.netProfit.toLocaleString('tr-TR')}
+                - Çalışan: ${context.summary.totalEmployees}
+                - Müşteri: ${context.summary.totalClients}
+                - İzinde: ${context.summary.onLeaveCount} kişi
+                - Proje Detayları: ${JSON.stringify(context.projects)}
+                - Gider Kategorileri: ${JSON.stringify(context.expensesByCategory)}
+                
+                GÖREVLER:
+                1. Finansal sağlığı değerlendir (gelir/gider dengesi, kar marjı)
+                2. Operasyonel verimliliği analiz et (çalışan/proje oranı, müşteri/gelir)
+                3. Büyüme göstergelerini incele
+                4. Risk faktörlerini belirle (tek müşteriye bağımlılık, yüksek gider vb.)
+                5. Fırsat alanlarını tespit et
+                
+                ÇIKTI FORMATI:
+                {
+                  "comment": "4-5 cümlelik KAPSAMLI analiz. Tüm metrikleri kapsayan, karşılaştırmalı ve trend içeren analiz. Örnek: 'Bu ay ₺X gelir, ₺Y gider ile %Z kar marjı elde ettiniz. W çalışanla V aktif proje yürütüyorsunuz, bu kişi başına U proje demek.'",
+                  "suggestion": "STRATEJİK ve ÇOK BOYUTLU öneri. Hem kısa hem uzun vadeli. Örnek: 'Kısa vadede X giderini %15 azaltarak ₺Y tasarruf edin. Orta vadede yeni müşteri kazanımına odaklanarak geliri %20 artırın. Ekip kapasitesini optimize edin.'"
+                }
+                
+                Türkçe, profesyonel, CEO'ya rapor verir gibi detaylı ve metriklerle desteklenmiş bir analiz yap.
+                `
+        }
 
         const response = await openRouter.chat.send({
             model: 'google/gemini-2.0-flash-001',
@@ -70,7 +174,7 @@ export async function GET(request: NextRequest) {
         console.error('AI Insight Final Catch Error:', error)
         return NextResponse.json({
             comment: "Bromak Agency şu an verimli bir dönemece giriyor, verileri analiz ettim ve her şey yolunda görünüyor! 💪",
-            suggestion: "Daha detaylı analiz için birazdan web sayfasını yenileyebilirsin."
+            suggestion: "Daha detaylı analiz için birazdan tekrar deneyebilirsin."
         })
     }
 }

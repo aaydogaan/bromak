@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import Image from "next/image"
 import { MessageSquare, X, Send, Bot, User, Loader2, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -85,13 +86,13 @@ export function AIChatbot() {
                         initial={{ opacity: 0, y: 40, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 40, scale: 0.95 }}
-                        className="fixed bottom-6 right-6 w-[400px] h-[600px] bg-white border border-zinc-200 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] flex flex-col z-[51] overflow-hidden"
+                        className="fixed bottom-4 right-4 md:bottom-6 md:right-6 w-[calc(100vw-2rem)] md:w-[400px] h-[calc(100vh-2rem)] md:h-[600px] max-h-[700px] bg-white border border-zinc-200 rounded-[1.5rem] md:rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] flex flex-col z-[51] overflow-hidden"
                     >
                         {/* Header */}
-                        <div className="px-6 py-5 bg-gradient-to-br from-[#e2150c] to-[#c4120a] flex items-center justify-between shadow-lg">
+                        <div className="px-4 md:px-6 py-4 md:py-5 bg-gradient-to-br from-[#e2150c] to-[#c4120a] flex items-center justify-between shadow-lg">
                             <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-2xl bg-white/20 flex items-center justify-center backdrop-blur-md border border-white/20">
-                                    <Bot className="h-6 w-6 text-white" />
+                                <div className="h-10 w-10 rounded-2xl bg-white/20 flex items-center justify-center backdrop-blur-md border border-white/20 overflow-hidden">
+                                    <Image src="/bromak-favicon.png" alt="Bromak" width={24} height={24} className="object-contain" />
                                 </div>
                                 <div>
                                     <h3 className="text-sm font-bold text-white tracking-tight">Bromak AI Asistan</h3>
@@ -114,7 +115,7 @@ export function AIChatbot() {
                         {/* Messages Area */}
                         <div
                             ref={scrollRef}
-                            className="flex-1 overflow-y-auto p-6 space-y-6 bg-zinc-50/30 scroll-smooth"
+                            className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6 bg-zinc-50/30 scroll-smooth"
                         >
                             {messages.map((msg, i) => (
                                 <motion.div
@@ -168,7 +169,7 @@ export function AIChatbot() {
                         </div>
 
                         {/* Input Footer */}
-                        <div className="px-6 py-6 bg-white border-t border-zinc-100">
+                        <div className="px-4 md:px-6 py-4 md:py-6 bg-white border-t border-zinc-100">
                             <form
                                 onSubmit={(e) => { e.preventDefault(); handleSend(); }}
                                 className="relative flex items-center group"
@@ -190,9 +191,8 @@ export function AIChatbot() {
                                     <Send className="h-4 w-4" />
                                 </Button>
                             </form>
-                            <div className="flex items-center justify-center gap-1.5 mt-4">
-                                <Sparkles className="h-3 w-3 text-zinc-300" />
-                                <p className="text-[10px] font-bold text-zinc-300 uppercase tracking-[0.2em]">Powered by Gemini 2.0</p>
+                            <div className="flex items-center justify-center gap-1.5 mt-3 md:mt-4">
+                                <p className="text-[9px] md:text-[10px] font-bold text-zinc-400 uppercase tracking-[0.15em]">Bro&Mak Ajans Paneli v1.1</p>
                             </div>
                         </div>
                     </motion.div>
