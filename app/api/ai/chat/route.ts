@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { OpenRouter } from '@openrouter/sdk'
 import { getBromakContext } from '@/lib/ai-context'
+
+const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
 
 export async function POST(request: NextRequest) {
     try {
-        const apiKey = process.env.OPENROUTER_API_KEY
+        const apiKey = process.env.GROQ_API_KEY
         if (!apiKey) {
-            console.error('OPENROUTER_API_KEY is missing from environment variables')
+            console.error('GROQ_API_KEY is missing from environment variables')
             return NextResponse.json({ error: 'API Anahtarı bulunamadı.' }, { status: 500 })
         }
-
-        const openRouter = new OpenRouter({ apiKey })
 
         const { messages } = await request.json()
         const context = await getBromakContext()
@@ -55,26 +54,36 @@ export async function POST(request: NextRequest) {
       7. Sayıları Türkçe formatında göster (örn: 1.234,56 TL).
     `
 
-        const response = await openRouter.chat.send({
-            model: 'google/gemini-2.0-flash-001',
-            messages: [
-                { role: 'system', content: systemPrompt },
-                ...messages
-            ],
-        }, {
+        const response = await fetch(GROQ_API_URL, {
+            method: 'POST',
             headers: {
-                'HTTP-Referer': 'https://bromak.brodigitalmedia.com',
-                'X-Title': 'Bromak Management System',
-            }
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                model: 'llama-3.3-70b-versatile',
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    ...messages
+                ],
+                temperature: 0.7,
+                max_tokens: 1024,
+            }),
         })
 
-        const aiMessage = response.choices[0].message
+        if (!response.ok) {
+            const errorBody = await response.text()
+            console.error('Groq API Error:', response.status, errorBody)
+            throw new Error(`Groq API Error: ${response.status}`)
+        }
+
+        const data = await response.json()
+        const aiMessage = data.choices[0].message
+
         return NextResponse.json(aiMessage)
     } catch (error: any) {
         console.error('AI Chat Error Details:', {
             message: error?.message,
-            statusCode: error?.statusCode,
-            body: error?.body,
             stack: error?.stack
         })
         return NextResponse.json({

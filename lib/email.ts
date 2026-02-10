@@ -290,6 +290,7 @@ export async function sendWeeklySummary(summary: {
   netProfit: number
   activeProjects: number
   onLeaveToday: number
+  newProjectsThisWeek: number
 }) {
   const subject = `📊 Haftalık Özet - ${new Date().toLocaleDateString('tr-TR')}`
 
@@ -333,6 +334,10 @@ export async function sendWeeklySummary(summary: {
               <div class="stat-card">
                 <div class="stat-label">Aktif Projeler</div>
                 <div class="stat-value">${summary.activeProjects}</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Bu Hafta Yeni Proje</div>
+                <div class="stat-value" style="color: #3b82f6;">${summary.newProjectsThisWeek}</div>
               </div>
             </div>
             

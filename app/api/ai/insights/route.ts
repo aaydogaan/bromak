@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { OpenRouter } from '@openrouter/sdk'
 import { getBromakContext } from '@/lib/ai-context'
+
+const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
 
 export async function GET(request: NextRequest) {
     try {
-        const apiKey = process.env.OPENROUTER_API_KEY
+        const apiKey = process.env.GROQ_API_KEY
         if (!apiKey) {
-            console.error('OPENROUTER_API_KEY is missing from environment variables')
+            console.error('GROQ_API_KEY is missing from environment variables')
             throw new Error('API Key missing')
         }
 
-        const openRouter = new OpenRouter({ apiKey })
         const context = await getBromakContext()
 
         // Get insight type from query params
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
                   "suggestion": "SOMUT ve UYGULANABILIR öneri. Genel değil spesifik olmalı. Örnek: 'X kategorisindeki giderleri %15 azaltarak aylık ₺Y tasarruf edebilirsiniz. Özellikle Z harcamasını gözden geçirin.'"
                 }
                 
-                Türkçe, profesyonel ve sayılarla desteklenmiş bir analiz yap.
+                Türkçe, profesyonel ve sayılarla desteklenmiş bir analiz yap. Sadece JSON döndür, başka bir şey yazma.
                 `
                 break
 
@@ -67,11 +67,11 @@ export async function GET(request: NextRequest) {
                 
                 ÇIKTI FORMATI:
                 {
-                  "comment": "3-4 cümlelik DETAYLI analiz. Tamamlanma oranı, çalışan başına proje, süre analizleri içermeli. Örnek: 'Toplam X projeden %Y'si tamamlanmış. Çalışan başına Z proje düşüyor, bu ideal seviyenin W'sinde.'",
-                  "suggestion": "SOMUT proje yönetimi önerisi. Örnek: 'Aktif proje sayısını 2 azaltarak ekip verimliliğini %20 artırabilirsiniz. X müşterisine bağımlılığı azaltmak için yeni müşteri kazanımına odaklanın.'"
+                  "comment": "3-4 cümlelik DETAYLI analiz. Tamamlanma oranı, çalışan başına proje, süre analizleri içermeli.",
+                  "suggestion": "SOMUT proje yönetimi önerisi."
                 }
                 
-                Türkçe, profesyonel ve metriklerle desteklenmiş bir analiz yap.
+                Türkçe, profesyonel ve metriklerle desteklenmiş bir analiz yap. Sadece JSON döndür, başka bir şey yazma.
                 `
                 break
 
@@ -96,11 +96,11 @@ export async function GET(request: NextRequest) {
                 
                 ÇIKTI FORMATI:
                 {
-                  "comment": "3-4 cümlelik DETAYLI analiz. Kar marjı, proje başına gelir, trend analizleri içermeli. Örnek: 'Bu ay ₺X gelir elde ettiniz, kar marjınız %Y. Proje başına ortalama ₺Z gelir elde ediyorsunuz.'",
-                  "suggestion": "SOMUT gelir artırma stratejisi. Örnek: 'Proje fiyatlarınızı %10 artırarak aylık ₺X ek gelir sağlayabilirsiniz. Premium paket sunarak müşteri başına geliri ₺Y artırın.'"
+                  "comment": "3-4 cümlelik DETAYLI analiz. Kar marjı, proje başına gelir, trend analizleri içermeli.",
+                  "suggestion": "SOMUT gelir artırma stratejisi."
                 }
                 
-                Türkçe, profesyonel ve finansal metriklerle desteklenmiş bir analiz yap.
+                Türkçe, profesyonel ve finansal metriklerle desteklenmiş bir analiz yap. Sadece JSON döndür, başka bir şey yazma.
                 `
                 break
 
@@ -128,27 +128,38 @@ export async function GET(request: NextRequest) {
                 
                 ÇIKTI FORMATI:
                 {
-                  "comment": "4-5 cümlelik KAPSAMLI analiz. Tüm metrikleri kapsayan, karşılaştırmalı ve trend içeren analiz. Örnek: 'Bu ay ₺X gelir, ₺Y gider ile %Z kar marjı elde ettiniz. W çalışanla V aktif proje yürütüyorsunuz, bu kişi başına U proje demek.'",
-                  "suggestion": "STRATEJİK ve ÇOK BOYUTLU öneri. Hem kısa hem uzun vadeli. Örnek: 'Kısa vadede X giderini %15 azaltarak ₺Y tasarruf edin. Orta vadede yeni müşteri kazanımına odaklanarak geliri %20 artırın. Ekip kapasitesini optimize edin.'"
+                  "comment": "4-5 cümlelik KAPSAMLI analiz. Tüm metrikleri kapsayan, karşılaştırmalı ve trend içeren analiz.",
+                  "suggestion": "STRATEJİK ve ÇOK BOYUTLU öneri. Hem kısa hem uzun vadeli."
                 }
                 
-                Türkçe, profesyonel, CEO'ya rapor verir gibi detaylı ve metriklerle desteklenmiş bir analiz yap.
+                Türkçe, profesyonel, CEO'ya rapor verir gibi detaylı ve metriklerle desteklenmiş bir analiz yap. Sadece JSON döndür, başka bir şey yazma.
                 `
         }
 
-        const response = await openRouter.chat.send({
-            model: 'google/gemini-2.0-flash-001',
-            messages: [
-                { role: 'user', content: prompt }
-            ],
-        }, {
+        const response = await fetch(GROQ_API_URL, {
+            method: 'POST',
             headers: {
-                'HTTP-Referer': 'https://bromak.brodigitalmedia.com',
-                'X-Title': 'Bromak Management System',
-            }
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                model: 'llama-3.3-70b-versatile',
+                messages: [
+                    { role: 'user', content: prompt }
+                ],
+                temperature: 0.7,
+                max_tokens: 1024,
+            }),
         })
 
-        let content = response.choices[0].message.content
+        if (!response.ok) {
+            const errorBody = await response.text()
+            console.error('Groq API Error:', response.status, errorBody)
+            throw new Error(`Groq API Error: ${response.status}`)
+        }
+
+        const data = await response.json()
+        let content = data.choices[0].message.content
         if (!content) throw new Error('AI empty response')
 
         const contentStr = typeof content === 'string' ? content : JSON.stringify(content)
@@ -161,10 +172,10 @@ export async function GET(request: NextRequest) {
         }
 
         try {
-            const data = JSON.parse(jsonStr)
+            const parsed = JSON.parse(jsonStr)
             return NextResponse.json({
-                comment: data.comment || "Analiz tamamlandı.",
-                suggestion: data.suggestion || "İş akışını takip etmeye devam edin."
+                comment: parsed.comment || "Analiz tamamlandı.",
+                suggestion: parsed.suggestion || "İş akışını takip etmeye devam edin."
             })
         } catch (parseError) {
             console.error('JSON Parse Error Detail:', { jsonStr, contentStr, parseError })

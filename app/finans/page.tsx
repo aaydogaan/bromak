@@ -87,23 +87,47 @@ export default function FinancialAnalysisPage() {
                 .select('name, client, budget, payment_amount, payment_date, start_date, project_type, status')
                 .neq('status', 'cancelled')
 
-            // Filter projects based on payment_date (or start_date as fallback)
+            // Fetch all expenses
+            const { data: allExpenses } = await supabase
+                .from('expenses')
+                .select('category, amount, date')
+
+            // For chart: always show last 3 months
+            const chartStartDate = new Date(now.getFullYear(), now.getMonth() - 2, 1)
+            const chartEndDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
+
+            // Filter projects for chart (last 3 months)
+            const chartProjects = (allProjects || []).filter(project => {
+                const dateStr = project.payment_date || project.start_date
+                if (!dateStr) return false
+                const d = new Date(dateStr)
+                const projectDate = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+                const filterStartDate = new Date(chartStartDate.getFullYear(), chartStartDate.getMonth(), chartStartDate.getDate())
+                const filterEndDate = new Date(chartEndDate.getFullYear(), chartEndDate.getMonth(), chartEndDate.getDate())
+                return projectDate >= filterStartDate && projectDate <= filterEndDate
+            })
+
+            // Filter expenses for chart (last 3 months)
+            const chartExpenses = (allExpenses || []).filter(expense => {
+                const d = new Date(expense.date)
+                const expenseDate = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+                const filterStartDate = new Date(chartStartDate.getFullYear(), chartStartDate.getMonth(), chartStartDate.getDate())
+                const filterEndDate = new Date(chartEndDate.getFullYear(), chartEndDate.getMonth(), chartEndDate.getDate())
+                return expenseDate >= filterStartDate && expenseDate <= filterEndDate
+            })
+
+            // Filter projects for selected period (for summary stats)
             const projects = (allProjects || []).filter(project => {
                 const dateStr = project.payment_date || project.start_date
                 if (!dateStr) return false
                 const d = new Date(dateStr)
-                // Compare dates only (ignore time)
                 const projectDate = new Date(d.getFullYear(), d.getMonth(), d.getDate())
                 const filterStartDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate())
                 const filterEndDate = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate())
                 return projectDate >= filterStartDate && projectDate <= filterEndDate
             })
 
-            // Fetch all expenses and filter by date range
-            const { data: allExpenses } = await supabase
-                .from('expenses')
-                .select('category, amount, date')
-
+            // Filter expenses for selected period (for summary stats)
             const expenses = (allExpenses || []).filter(expense => {
                 const d = new Date(expense.date)
                 const expenseDate = new Date(d.getFullYear(), d.getMonth(), d.getDate())
@@ -112,8 +136,8 @@ export default function FinancialAnalysisPage() {
                 return expenseDate >= filterStartDate && expenseDate <= filterEndDate
             })
 
-            // Process data
-            processFinancialData(projects || [], expenses || [], startDate, endDate)
+            // Process data: use chart data for monthly breakdown, period data for totals
+            processFinancialData(chartProjects, chartExpenses, projects, expenses, chartStartDate, chartEndDate)
 
         } catch (error) {
             console.error('Error fetching financial data:', error)
@@ -122,13 +146,16 @@ export default function FinancialAnalysisPage() {
         }
     }
 
-    const processFinancialData = (projects: any[], expenses: any[], startDate: Date, endDate: Date) => {
-        // Generate months
+    const processFinancialData = (chartProjects: any[], chartExpenses: any[], periodProjects: any[], periodExpenses: any[], chartStartDate: Date, chartEndDate: Date) => {
+        // Generate months - always show last 3 months for chart
         const months: { [key: string]: MonthlyData } = {}
-        const monthCount = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30))
 
-        for (let i = 0; i < Math.min(monthCount, 12); i++) {
-            const d = new Date(endDate.getFullYear(), endDate.getMonth() - i, 1)
+        // Always show last 3 months
+        const monthsToShow = 3
+
+        // Generate months from oldest to newest
+        for (let i = monthsToShow - 1; i >= 0; i--) {
+            const d = new Date(chartEndDate.getFullYear(), chartEndDate.getMonth() - i, 1)
             const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
             const label = d.toLocaleString('tr-TR', { month: 'short', year: '2-digit' })
             months[key] = {
@@ -141,11 +168,10 @@ export default function FinancialAnalysisPage() {
             }
         }
 
-        // Process revenue
-        let totalRev = 0
+        // Process chart revenue (for monthly breakdown)
         const typeRevenue: { [key: string]: number } = {}
 
-        for (const project of projects) {
+        for (const project of chartProjects) {
             const dateStr = project.payment_date || project.start_date
             if (!dateStr) continue
 
@@ -160,25 +186,20 @@ export default function FinancialAnalysisPage() {
                 months[key].projectCount += 1
             }
 
-            totalRev += amount
-
             const type = project.project_type || 'diger'
             typeRevenue[type] = (typeRevenue[type] || 0) + amount
         }
 
-        // Process expenses
-        let totalExp = 0
+        // Process chart expenses (for monthly breakdown)
         const categoryExpense: { [key: string]: number } = {}
 
-        for (const expense of expenses) {
+        for (const expense of chartExpenses) {
             const d = new Date(expense.date)
             const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 
             if (months[key]) {
                 months[key].expense += expense.amount
             }
-
-            totalExp += expense.amount
 
             const cat = expense.category.includes("Faturalar") ? "Faturalar" : expense.category
             categoryExpense[cat] = (categoryExpense[cat] || 0) + expense.amount
@@ -192,8 +213,25 @@ export default function FinancialAnalysisPage() {
                 : 0
         }
 
-        const monthlyArray = Object.values(months).reverse()
+        // Convert to array and sort by date (oldest to newest)
+        const monthlyArray = Object.keys(months)
+            .sort()
+            .map(key => months[key])
+
         setMonthlyData(monthlyArray)
+
+        // Calculate summary stats from PERIOD data (not chart data)
+        let totalRev = 0
+        for (const project of periodProjects) {
+            const amountSource = project.payment_amount || project.budget
+            const amount = parseFloat(String(amountSource || '0').replace(/[^0-9.-]/g, ''))
+            totalRev += amount
+        }
+
+        let totalExp = 0
+        for (const expense of periodExpenses) {
+            totalExp += expense.amount
+        }
 
         // Set summary stats
         const netProf = totalRev - totalExp

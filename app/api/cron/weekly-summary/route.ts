@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sendWeeklySummary } from '@/lib/email'
 import { createClient } from '@/lib/supabase/client'
-import { startOfMonth, endOfMonth } from 'date-fns'
+import { startOfMonth, endOfMonth, subDays } from 'date-fns'
 
 export async function GET(request: NextRequest) {
     try {
@@ -57,12 +57,20 @@ export async function GET(request: NextRequest) {
             .lte('start_date', now.toISOString().split('T')[0])
             .gte('end_date', now.toISOString().split('T')[0])
 
+        // 5. Get New Projects This Week
+        const oneWeekAgo = subDays(now, 7)
+        const { data: newProjectsData } = await supabase
+            .from('projects')
+            .select('id, name')
+            .gte('created_at', oneWeekAgo.toISOString())
+
         const summary = {
             totalRevenue,
             totalExpenses,
             netProfit: totalRevenue - totalExpenses,
             activeProjects: activeProjects?.length || 0,
             onLeaveToday: leaves?.length || 0,
+            newProjectsThisWeek: newProjectsData?.length || 0,
         }
 
         const result = await sendWeeklySummary(summary)

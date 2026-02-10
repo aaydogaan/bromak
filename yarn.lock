@@ -277,13 +277,6 @@
   resolved "https://registry.npmjs.org/@next/swc-win32-x64-msvc/-/swc-win32-x64-msvc-16.1.1.tgz"
   integrity sha512-Ncwbw2WJ57Al5OX0k4chM68DKhEPlrXBaSXDCi2kPi5f4d8b3ejr3RRJGfKBLrn2YJL5ezNS7w2TZLHSti8CMw==
 
-"@openrouter/sdk@^0.5.1":
-  version "0.5.1"
-  resolved "https://registry.npmjs.org/@openrouter/sdk/-/sdk-0.5.1.tgz"
-  integrity sha512-Kl0N1jIj7A3lnkM5dO3SGP8JP3jAozzs6JWcHVuZUBt5DsGKxFGNH1Y15bCfsJiLNA2ylAQpCN3aNcgEYkkL5Q==
-  dependencies:
-    zod "^3.25.0 || ^4.0.0"
-
 "@radix-ui/number@1.1.0":
   version "1.1.0"
   resolved "https://registry.npmjs.org/@radix-ui/number/-/number-1.1.0.tgz"
@@ -2093,7 +2086,7 @@ xlsx@^0.18.5:
     wmf "~1.0.1"
     word "~0.3.0"
 
-"zod@^3.25.0 || ^4.0.0", zod@3.25.76:
+zod@3.25.76:
   version "3.25.76"
   resolved "https://registry.npmjs.org/zod/-/zod-3.25.76.tgz"
   integrity sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==

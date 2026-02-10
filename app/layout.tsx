@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
 }
 
-import { AIChatbot } from "@/components/ai-chatbot"
+import { ConditionalChatbot } from "@/components/conditional-chatbot"
 
 export default function RootLayout({
   children,
@@ -43,7 +43,7 @@ export default function RootLayout({
         <MoneyVisibilityProvider>
           <AuthGuard>
             {children}
-            <AIChatbot />
+            <ConditionalChatbot />
           </AuthGuard>
         </MoneyVisibilityProvider>
         <Analytics />
