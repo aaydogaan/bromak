@@ -1,0 +1,52 @@
+﻿{
+    "success":  true,
+    "durakNo":  "1658",
+    "timestamp":  "2026-02-11T12:48:35.191Z",
+    "toplamOtobus":  4,
+    "data":  [
+                 {
+                     "hatNo":  "56",
+                     "hatHarf":  "A",
+                     "hatAdi":  "ÅEYH ÅAMÄ°L",
+                     "sure":  "DURAKTA",
+                     "sureDakika":  -1,
+                     "yon":  "YAZIR",
+                     "canliIzle":  true,
+                     "hatKodu":  "56-0"
+                 },
+                 {
+                     "hatNo":  "52",
+                     "hatHarf":  "A",
+                     "hatAdi":  "MERAM DEVLET HASTANESÄ°",
+                     "sure":  "7 dk",
+                     "sureDakika":  7,
+                     "yon":  "YAZIR",
+                     "canliIzle":  true,
+                     "hatKodu":  "52-0"
+                 },
+                 {
+                     "hatNo":  "52",
+                     "hatHarf":  "A",
+                     "hatAdi":  "MERAM DEVLET HASTANESÄ°",
+                     "sure":  "13 dk",
+                     "sureDakika":  13,
+                     "yon":  "ÃINARALTI",
+                     "canliIzle":  true,
+                     "hatKodu":  "52-0"
+                 },
+                 {
+                     "hatNo":  "56",
+                     "hatHarf":  "A",
+                     "hatAdi":  "ÅEYH ÅAMÄ°L",
+                     "sure":  "16 dk",
+                     "sureDakika":  16,
+                     "yon":  "KÃLTÃRPARK",
+                     "canliIzle":  true,
+                     "hatKodu":  "56-0"
+                 }
+             ],
+    "uyari":  {
+                  "mesaj":  "",
+                  "tipi":  "success"
+              }
+}

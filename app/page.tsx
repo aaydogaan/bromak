@@ -9,6 +9,7 @@ import { Banknote, Users, FolderKanban } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import type { LeaveRecord } from "@/types/leave"
 import { AIInsights } from "@/components/ai-insights"
+import { AtusWidget } from "@/components/atus-widget"
 
 type ChartRow = {
   month: string
@@ -468,6 +469,9 @@ export default function DashboardPage() {
                 data={chartData ?? undefined}
                 totalAnnual={chartData ? chartData.reduce((s, r) => s + r.revenue, 0) : undefined}
               />
+              <div className="mt-6">
+                <AtusWidget />
+              </div>
             </div>
             <div className="space-y-6">
               {/* AI Insights - Compact */}
