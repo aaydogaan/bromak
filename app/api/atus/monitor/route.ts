@@ -11,8 +11,10 @@ export async function GET(request: Request) {
     const hatlar = '52,56';
 
     try {
-        // Kendi API'mizi çağırıyoruz (Veriyi çekmek için)
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        // İstek yapılan URL'den otomatik olarak ana adresi al (Vercel uyumu için)
+        const { protocol, host } = new URL(request.url);
+        const baseUrl = `${protocol}//${host}`;
+
         const response = await fetch(`${baseUrl}/api/atus/live?durakNo=${durakNo}&hatlar=${hatlar}`, {
             cache: 'no-store'
         });
