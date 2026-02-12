@@ -13,8 +13,14 @@ export async function POST(request: Request) {
         const chatId = message.chat.id;
         const msgId = message.message_id;
 
-        // Dashboard URL'ini belirle (kendi siten)
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://' + process.env.VERCEL_URL;
+        // Dashboard URL'ini belirle
+        let baseUrl = process.env.NEXT_PUBLIC_APP_URL;
+        if (!baseUrl && process.env.VERCEL_URL) {
+            baseUrl = `https://${process.env.VERCEL_URL}`;
+        }
+        if (!baseUrl) {
+            baseUrl = 'http://localhost:3000'; // Fallback
+        }
 
         // Atus verisini çek
         if (text.includes('52') || text.includes('56') || text.includes('otobüs') || text.includes('durum')) {
