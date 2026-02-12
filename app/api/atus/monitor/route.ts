@@ -41,7 +41,8 @@ export async function GET(request: Request) {
                 const now = Date.now();
                 const lastTime = lastNotifiedBuses[busKey] || 0;
 
-                if (now - lastTime > 15 * 60 * 1000) {
+                // TEST: Zaman kontrolünü kaldırıyoruz, her seferinde atsın
+                if (true) {
                     const message = `🚌 <b>Otobüs Yaklaşıyor!</b>\n\n` +
                         `<b>Hat:</b> ${bus.hatNo} - ${bus.hatAdi}\n` +
                         `<b>Yön:</b> ${bus.yon}\n` +
