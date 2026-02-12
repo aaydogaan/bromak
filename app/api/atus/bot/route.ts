@@ -16,6 +16,12 @@ export async function POST(request: Request) {
             return NextResponse.json({ ok: true });
         }
 
+        // Özel Yanıt: enes sıkıldı
+        if (text.includes('enes sıkıldı')) {
+            await sendTelegram(chatId, "Otur çalış sana piyasa yok", msgId);
+            return NextResponse.json({ ok: true });
+        }
+
         const { protocol, host } = new URL(request.url);
         const baseUrl = `${protocol}//${host}`;
 
