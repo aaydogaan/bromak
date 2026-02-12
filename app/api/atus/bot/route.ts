@@ -10,6 +10,12 @@ export async function POST(request: Request) {
         const chatId = message.chat.id;
         const msgId = message.message_id;
 
+        // Özel Yanıt: Kurt darlandı
+        if (text.includes('kurt darlandı')) {
+            await sendTelegram(chatId, "meram piyasa akar 🚗, şefikcan piyasa 🚗", msgId);
+            return NextResponse.json({ ok: true });
+        }
+
         const { protocol, host } = new URL(request.url);
         const baseUrl = `${protocol}//${host}`;
 
@@ -18,27 +24,32 @@ export async function POST(request: Request) {
             {
                 id: '1658',
                 name: '🏠 Eşrefoğlu',
-                keywords: ['eşref', 'esref'],
+                keywords: ['eşref', 'esref', 'ev', 'recep sıkıldı'],
                 defaultLines: ['52', '56'],
                 direction: 'YAZIR'
             },
             {
                 id: '1635',
                 name: '🏢 Adaklı',
-                keywords: ['adaklı', 'adaklı'],
+                keywords: ['adaklı', 'adakli', 'ofis', 'is', 'iş'],
                 defaultLines: ['52', '56'],
                 direction: ['ÇINARALTI', 'KÜLTÜRPARK']
             },
             {
                 id: '1492',
                 name: '🏢 Kaşgarlı Mahmut',
-                keywords: ['kaşgarlı', 'kasgarli', 'mahmut'],
+                keywords: ['kaşgarlı', 'kasgarli', 'mahmut', 'ofis', 'is', 'iş'],
                 defaultLines: ['52', '56', '97'],
                 direction: ['ÇINARALTI', 'KÜLTÜRPARK', 'MERAM']
             }
         ];
 
         const ALL_LINES = ['52', '56', '97'];
+
+        if (text.includes('kurt darlandı')) {
+            await sendTelegram(chatId, "🌊 dalgalı, meram piyasa akar, şefikcan piyasa 🚀", msgId);
+            return NextResponse.json({ ok: true });
+        }
 
         // Hangi durakları ve hangi hatları istiyor?
         const reqLines = ALL_LINES.filter(line => text.includes(line));
