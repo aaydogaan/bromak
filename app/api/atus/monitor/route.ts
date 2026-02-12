@@ -1,17 +1,14 @@
 import { NextResponse } from 'next/server';
 import { sendTelegramMessage } from '@/lib/telegram';
 
-// Son gönderilen otobüsleri takip etmek için (Spam koruması)
-// Not: Serverless ortamlarda bu sıfırlanabilir, ancak local dev'de çalışır.
+// Son gönderilen otobüsleri takip etmek için (Spam korumasını tutan değişken)
 let lastNotifiedBuses: Record<string, number> = {};
 
 export async function GET(request: Request) {
-    const { searchParams } = new URL(request.url);
     const durakNo = '1658';
     const hatlar = '52,56';
 
     try {
-        // İstek yapılan URL'den otomatik olarak ana adresi al (Vercel uyumu için)
         const { protocol, host } = new URL(request.url);
         const baseUrl = `${protocol}//${host}`;
 
@@ -31,18 +28,22 @@ export async function GET(request: Request) {
             // Sadece YAZIR yönüne (Eve Dönüş) gidenler için bildirim gönder
             const isTargetDirection = bus.yon && bus.yon.toUpperCase().includes('YAZIR');
 
+            // --- ZAMAN KONTROLÜ (18:00 - 00:00) ---
+            const nowTime = new Date();
+            const hour = nowTime.getUTCHours() + 3; // Türkiye saati (Vercel UTC + 3)
+            const trHour = hour % 24;
+            const isWorkingHours = trHour >= 18 && trHour <= 23; // 18:00 - 23:59 arası
+
             // 10 dakika ve altı kontrolü
-            const isNear = isTargetDirection && bus.sureDakika !== null && bus.sureDakika <= 10;
+            const isNear = isWorkingHours && isTargetDirection && bus.sureDakika !== null && bus.sureDakika <= 10;
 
             if (isNear) {
                 const busKey = `${bus.hatNo}-${bus.yon}-${bus.sureDakika}`;
-
-                // Eğer bu otobüs için son 15 dakika içinde bildirim atılmadıysa
                 const now = Date.now();
                 const lastTime = lastNotifiedBuses[busKey] || 0;
 
-                // TEST: Zaman kontrolünü kaldırıyoruz, her seferinde atsın
-                if (true) {
+                // Spam koruması: 15 dakika (900.000 ms)
+                if (now - lastTime > 15 * 60 * 1000) {
                     const message = `🚌 <b>Otobüs Yaklaşıyor!</b>\n\n` +
                         `<b>Hat:</b> ${bus.hatNo} - ${bus.hatAdi}\n` +
                         `<b>Yön:</b> ${bus.yon}\n` +
@@ -59,7 +60,8 @@ export async function GET(request: Request) {
         return NextResponse.json({
             success: true,
             checkedCount: buses.length,
-            notified: notifications
+            notified: notifications,
+            serverTime: new Date().toISOString()
         });
 
     } catch (error) {
