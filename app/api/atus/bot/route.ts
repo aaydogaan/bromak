@@ -4,82 +4,77 @@ export async function POST(request: Request) {
     try {
         const body = await request.json();
         const message = body.message;
+        
+        // Eğer mesaj yoksa veya sadece bir start komutuysa menüyü gönder
         if (!message || !message.text) return NextResponse.json({ ok: true });
 
         const text = message.text.toLowerCase().trim();
         const chatId = message.chat.id;
         const msgId = message.message_id;
 
-        // Özel Yanıt: Kurt darlandı
+        const { protocol, host } = new URL(request.url);
+        const baseUrl = `${protocol}//${host}`;
+
+        // --- 1. ÖZEL KOMUTLAR (Eğlence) ---
         if (text.includes('kurt darlandı')) {
-            await sendTelegram(chatId, "meram piyasa akar 🚗, şefikcan piyasa 🚗", msgId);
+            await sendTelegram(chatId, "dalgalı, meram piyasa akar, şefikcan piyasa", msgId);
             return NextResponse.json({ ok: true });
         }
-
-        // Özel Yanıt: enes sıkıldı
         if (text.includes('enes sıkıldı')) {
             await sendTelegram(chatId, "Otur çalış sana piyasa yok", msgId);
             return NextResponse.json({ ok: true });
         }
 
-        const { protocol, host } = new URL(request.url);
-        const baseUrl = `${protocol}//${host}`;
-
-        // Konfigürasyon
+        // --- 2. DURAK KONFİGÜRASYONU ---
         const STOPS = [
-            {
-                id: '1658',
-                name: '🏠 Eşrefoğlu',
-                keywords: ['eşref', 'esref', 'ev', 'recep sıkıldı'],
-                defaultLines: ['52', '56'],
-                direction: 'YAZIR'
+            { 
+                id: '1658', 
+                name: '🏠 Eşrefoğlu (Ev)', 
+                keywords: ['eşref', 'ev', 'recep sıkıldı', '🏠 ev'], 
+                defaultLines: ['52', '56'], 
+                direction: 'YAZIR' 
             },
-            {
-                id: '1635',
-                name: '🏢 Adaklı',
-                keywords: ['adaklı', 'adakli', 'ofis', 'is', 'iş'],
-                defaultLines: ['52', '56'],
-                direction: ['ÇINARALTI', 'KÜLTÜRPARK']
+            { 
+                id: '1635', 
+                name: '🏢 Adaklı (Ofis)', 
+                keywords: ['adaklı', 'ofis', '🏢 ofis'], 
+                defaultLines: ['52', '56'], 
+                direction: ['ÇINARALTI', 'KÜLTÜRPARK'] 
             },
-            {
-                id: '1492',
-                name: '🏢 Kaşgarlı Mahmut',
-                keywords: ['kaşgarlı', 'kasgarli', 'mahmut', 'ofis', 'is', 'iş'],
-                defaultLines: ['52', '56', '97'],
-                direction: ['ÇINARALTI', 'KÜLTÜRPARK', 'MERAM']
+            { 
+                id: '1492', 
+                name: '🏢 Kaşgarlı Mahmut (Ofis)', 
+                keywords: ['kaşgarlı', 'mahmut', 'ofis', '🏢 ofis'], 
+                defaultLines: ['52', '56', '97'], 
+                direction: ['ÇINARALTI', 'KÜLTÜRPARK', 'MERAM'] 
             }
         ];
 
-        const ALL_LINES = ['52', '56', '97'];
-
-        if (text.includes('kurt darlandı')) {
-            await sendTelegram(chatId, "🌊 dalgalı, meram piyasa akar, şefikcan piyasa 🚀", msgId);
+        // --- 3. MENÜ İSTEĞİ (/start veya menü yazınca) ---
+        if (text === '/start' || text === 'menü' || text === 'butonlar') {
+            await sendMenu(chatId);
             return NextResponse.json({ ok: true });
         }
 
-        // Hangi durakları ve hangi hatları istiyor?
-        const reqLines = ALL_LINES.filter(line => text.includes(line));
+        // --- 4. ARAÇ SORGULAMA ---
+        const reqLines = ['52', '56', '97'].filter(line => text.includes(line));
         const reqStops = STOPS.filter(stop => stop.keywords.some(k => text.includes(k)));
 
-        // Eğer hiçbir durak veya hat yakalanmadıysa cevap verme (Grup kalabalığı olmasın)
-        if (reqLines.length === 0 && reqStops.length === 0 && !text.includes('durum') && !text.includes('nerede')) {
+        // Eğer hiçbir durak veya hat yakalanmadıysa cevap verme
+        if (reqLines.length === 0 && reqStops.length === 0 && !text.includes('durum')) {
             return NextResponse.json({ ok: true });
         }
 
-        // Karar Verici: 
-        // 1. Durak ismi varsa sadece o durak.
-        // 2. Hat no varsa her durakta o hat.
-        // 3. İkisi de yoksa ama tetikleyici varsa her yer.
-        const stopsToSearch = reqStops.length > 0 ? reqStops : STOPS;
-        const linesToSearch = reqLines.length > 0 ? reqLines : null;
+        const stopsToSearch = reqStops.length > 0 ? reqStops : STOPS.filter(s => reqLines.some(l => s.defaultLines.includes(l)));
+        const finalStops = stopsToSearch.length > 0 ? stopsToSearch : STOPS;
 
         let fullReport = `🚌 <b>Otobüs Bilgisi</b>\n`;
         let foundAny = false;
 
-        for (const stop of stopsToSearch) {
-            const currentLines = linesToSearch || stop.defaultLines;
+        for (const stop of finalStops) {
+            const currentLines = reqLines.length > 0 ? reqLines : stop.defaultLines;
             const url = `${baseUrl}/api/atus/live?durakNo=${stop.id}&hatlar=${currentLines.join(',')}`;
-
+            
             const res = await fetch(url);
             const json = await res.json();
 
@@ -89,8 +84,8 @@ export async function POST(request: Request) {
 
                 json.data.forEach((bus: any) => {
                     const yon = bus.yon.toUpperCase();
-                    const isTargetYon = Array.isArray(stop.direction)
-                        ? stop.direction.some(d => yon.includes(d))
+                    const isTargetYon = Array.isArray(stop.direction) 
+                        ? stop.direction.some(d => yon.includes(d)) 
                         : yon.includes(stop.direction);
 
                     if (isTargetYon) {
@@ -106,7 +101,7 @@ export async function POST(request: Request) {
         }
 
         if (!foundAny) {
-            fullReport = `❌ <b>${reqLines.join(', ')}</b> hattı için aktif otobüs bulunamadı.`;
+            fullReport = `❌ Seçilen kriterler için aktif otobüs bulunamadı.`;
         }
 
         await sendTelegram(chatId, fullReport, msgId);
@@ -116,6 +111,31 @@ export async function POST(request: Request) {
         console.error('Webhook Error:', error);
         return NextResponse.json({ ok: true });
     }
+}
+
+// Menü/Butonları gönderen fonksiyon
+async function sendMenu(chatId: number) {
+    const token = process.env.TELEGRAM_BOT_TOKEN;
+    const keyboard = {
+        keyboard: [
+            [{ text: '🏠 Ev' }, { text: '🏢 Ofis' }],
+            [{ text: '52' }, { text: '56' }, { text: '97' }],
+            [{ text: '🚀 Durum' }]
+        ],
+        resize_keyboard: true,
+        one_time_keyboard: false
+    };
+
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            chat_id: chatId,
+            text: "👋 <b>BROMAK Otobüs Asistanına Hoş Geldin!</b>\n\nAlttaki menüden sorgulama yapabilirsin.",
+            parse_mode: 'HTML',
+            reply_markup: keyboard
+        })
+    });
 }
 
 async function sendTelegram(chatId: number, text: string, replyId: number) {
