@@ -134,7 +134,7 @@ export async function sendProjectNotification(project: {
   status: string
   total_amount?: number
 }) {
-  const subject = `📁 Yeni Proje Eklendi: ${project.name}`
+  const subject = `📁 Yeni Proje Eklendi: ${project.name.replace(/[\r\n]+/g, ' ').trim()}`
 
   const html = `
     <!DOCTYPE html>
@@ -218,7 +218,15 @@ export async function sendExpenseNotification(expense: {
   date: string
 }) {
   const isIncome = expense.type === 'income'
-  const subject = `${isIncome ? '💰 Yeni Gelir' : '💸 Yeni Gider'}: ${expense.description}`
+  // Subject alanında \n karakterine izin verilmiyor (Resend 422 hatası).
+  // Açıklamayı tek satıra indirgeyip 80 karakterle sınırlıyoruz.
+  const cleanDescription = expense.description
+    .replace(/[\r\n]+/g, ' ')  // Satır sonlarını boşluğa çevir
+    .trim()
+  const shortDescription = cleanDescription.length > 80
+    ? cleanDescription.substring(0, 80) + '...'
+    : cleanDescription
+  const subject = `${isIncome ? '💰 Yeni Gelir' : '💸 Yeni Gider'}: ${shortDescription}`
 
   const html = `
     <!DOCTYPE html>
