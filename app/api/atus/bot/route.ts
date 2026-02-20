@@ -28,26 +28,6 @@ const STOPS = [
     },
 ];
 
-// ─── INLINE KEYBOARD ─────────────────────────────────────────────────────────
-// Hangi durak sorgulananın "Yenile" butonu + diğer hızlı geçiş butonları
-function buildInlineKeyboard(activeKey: string) {
-    const refreshLabel =
-        activeKey === 'ev' ? '🔄 Evi Yenile' :
-            activeKey === 'ofis' ? '🔄 Ofisi Yenile' : '🔄 Yenile';
-
-    return {
-        inline_keyboard: [
-            [
-                { text: refreshLabel, callback_data: activeKey },
-            ],
-            [
-                { text: '🏠 Ev', callback_data: 'ev' },
-                { text: '🏢 Ofis', callback_data: 'ofis' },
-            ]
-        ]
-    };
-}
-
 // ─── OTOBÜs SORGU MOTORU ─────────────────────────────────────────────────────
 async function queryBuses(stopKeys: string[], baseUrl: string): Promise<{ text: string; activeKey: string }> {
     const targetStops = stopKeys.length > 0
@@ -104,39 +84,6 @@ export async function POST(request: Request) {
         const { protocol, host } = new URL(request.url);
         const baseUrl = `${protocol}//${host}`;
 
-        // ── CALLBACK QUERY (Buton tıklandı) ──────────────────────────────────
-        if (body.callback_query) {
-            const cb = body.callback_query;
-            const chatId = cb.message.chat.id;
-            const messageId = cb.message.message_id;
-            const callbackData = cb.data; // 'ev', 'ofis', 'ofis2'
-
-            // Butonun üzerindeki "loading" ibaresi için cevap ver (zorunlu)
-            await fetch(`https://api.telegram.org/bot${token}/answerCallbackQuery`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ callback_query_id: cb.id, text: '🔄 Güncelleniyor...' }),
-            });
-
-            // Otobüs verisini çek
-            const { text, activeKey } = await queryBuses([callbackData], baseUrl);
-
-            // Mevcut mesajı güncelle (yeni mesaj atmaz!)
-            await fetch(`https://api.telegram.org/bot${token}/editMessageText`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    chat_id: chatId,
-                    message_id: messageId,
-                    text,
-                    parse_mode: 'HTML',
-                    reply_markup: buildInlineKeyboard(activeKey),
-                }),
-            });
-
-            return NextResponse.json({ ok: true });
-        }
-
         // ── NORMAL MESAJ ──────────────────────────────────────────────────────
         const message = body.message;
         if (!message || !message.text) return NextResponse.json({ ok: true });
@@ -180,10 +127,9 @@ export async function POST(request: Request) {
                 .map(s => s.callbackKey);
         }
 
-        // Veriyi çek
-        const { text: reportText, activeKey } = await queryBuses(targetStopKeys, baseUrl);
+        // Veriyi çek ve düz metin olarak gönder
+        const { text: reportText } = await queryBuses(targetStopKeys, baseUrl);
 
-        // Yanıtı inline butonlarla gönder
         await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -192,7 +138,6 @@ export async function POST(request: Request) {
                 text: reportText,
                 parse_mode: 'HTML',
                 reply_to_message_id: msgId,
-                reply_markup: buildInlineKeyboard(activeKey),
             }),
         });
 
