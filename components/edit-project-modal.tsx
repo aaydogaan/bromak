@@ -28,6 +28,7 @@ interface Project {
   image_url: string
   payment_date?: string
   payment_amount?: string
+  project_type?: 'web_site' | 'sosyal_medya' | 'seo_hizmeti' | 'video_cekimi' | 'baski_isleri' | 'diger'
 }
 
 interface EditProjectModalProps {
@@ -43,6 +44,7 @@ export function EditProjectModal({ project, open, onOpenChange, onSuccess }: Edi
     client: '',
     description: '',
     status: 'planning',
+    project_type: 'web_site',
     budget: '',
     location: '',
     start_date: '',
@@ -64,6 +66,7 @@ export function EditProjectModal({ project, open, onOpenChange, onSuccess }: Edi
         client: project.client,
         description: project.description || '',
         status: project.status,
+        project_type: (project as any).project_type || 'web_site',
         budget: project.budget,
         location: project.location || '',
         start_date: project.start_date,
@@ -248,6 +251,26 @@ export function EditProjectModal({ project, open, onOpenChange, onSuccess }: Edi
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="project_type">Proje Türü</Label>
+              <Select
+                value={(formData as any).project_type || 'web_site'}
+                onValueChange={(value) => handleSelectChange('project_type', value)}
+              >
+                <SelectTrigger id="project_type">
+                  <SelectValue placeholder="Proje türü seçin" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="web_site">Web Sitesi</SelectItem>
+                  <SelectItem value="sosyal_medya">Sosyal Medya</SelectItem>
+                  <SelectItem value="seo_hizmeti">Seo Hizmeti</SelectItem>
+                  <SelectItem value="video_cekimi">Video Çekimi</SelectItem>
+                  <SelectItem value="baski_isleri">Baskı İşleri</SelectItem>
+                  <SelectItem value="diger">Diğer</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">

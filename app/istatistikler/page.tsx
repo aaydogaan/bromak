@@ -22,6 +22,9 @@ function mapType(t: string): string {
   switch (t) {
     case 'web_site': return 'Web Sitesi'
     case 'sosyal_medya': return 'Sosyal Medya'
+    case 'seo_hizmeti': return 'Seo Hizmeti'
+    case 'video_cekimi': return 'Video Çekimi'
+    case 'baski_isleri': return 'Baskı İşleri'
     case 'diger': return 'Diğer'
     default: return 'Diğer'
   }
@@ -158,6 +161,9 @@ export default function StatisticsPage() {
       const typePalette: Record<string, string> = {
         web_site: 'hsl(var(--primary))',
         sosyal_medya: 'hsl(var(--secondary))',
+        seo_hizmeti: 'hsl(var(--accent))',
+        video_cekimi: '#f97316',
+        baski_isleri: '#ec4899',
         diger: 'hsl(var(--muted))',
       }
       const rows = Array.from(statusCounts.entries()).map(([name, value]) => ({ name: mapStatus(name), value, color: palette[name] || 'hsl(var(--border))' }))

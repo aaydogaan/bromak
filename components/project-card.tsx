@@ -32,7 +32,7 @@ interface Project {
   start_date: string
   // Aşağıdaki alanlar opsiyonel
   startDate?: string
-  project_type?: 'web_site' | 'sosyal_medya' | 'diger'
+  project_type?: 'web_site' | 'sosyal_medya' | 'seo_hizmeti' | 'video_cekimi' | 'baski_isleri' | 'diger'
 }
 
 interface ProjectCardProps {
@@ -50,12 +50,12 @@ const statusConfig = {
   cancelled: { label: "İptal Edildi", variant: "destructive" as const }
 }
 
-export function ProjectCard({ 
-  project, 
-  onViewDetails = () => {}, 
-  onEdit = () => {}, 
-  onDelete = () => {},
-  onClick 
+export function ProjectCard({
+  project,
+  onViewDetails = () => { },
+  onEdit = () => { },
+  onDelete = () => { },
+  onClick
 }: ProjectCardProps & { onClick?: () => void }) {
   const status = statusConfig[project.status]
 
@@ -63,6 +63,9 @@ export function ProjectCard({
     switch (project.project_type) {
       case 'web_site': return 'Web Sitesi'
       case 'sosyal_medya': return 'Sosyal Medya'
+      case 'seo_hizmeti': return 'Seo Hizmeti'
+      case 'video_cekimi': return 'Video Çekimi'
+      case 'baski_isleri': return 'Baskı İşleri'
       case 'diger': return 'Diğer'
       default: return null
     }
@@ -108,25 +111,25 @@ export function ProjectCard({
         </div>
 
         <div className="flex items-center gap-2 mt-4">
-        <Button 
-          size="sm" 
-          variant="outline" 
-          className="flex-1" 
-          onClick={(e) => {
-            e.stopPropagation();
-            onClick ? onClick() : onViewDetails(project);
-          }}
-        >
-          <Eye className="w-4 h-4 mr-2" />
-          Detaylar
-        </Button>
-        <Button size="sm" variant="outline" onClick={() => onEdit(project)}>
-          Düzenle
-        </Button>
-        <Button size="sm" variant="outline" onClick={() => onDelete(project.id)}>
-          <Trash2 className="w-4 h-4" />
-        </Button>
-      </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex-1"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClick ? onClick() : onViewDetails(project);
+            }}
+          >
+            <Eye className="w-4 h-4 mr-2" />
+            Detaylar
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => onEdit(project)}>
+            Düzenle
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => onDelete(project.id)}>
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
       </CardContent>
     </Card>
   )

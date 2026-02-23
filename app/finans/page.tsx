@@ -275,12 +275,18 @@ export default function FinancialAnalysisPage() {
         const typeColors: { [key: string]: string } = {
             "web_site": "#10b981",
             "sosyal_medya": "#3b82f6",
+            "seo_hizmeti": "#f59e0b",
+            "video_cekimi": "#f97316",
+            "baski_isleri": "#ec4899",
             "diger": "#8b5cf6"
         }
 
         const typeLabels: { [key: string]: string } = {
             "web_site": "Web Sitesi",
             "sosyal_medya": "Sosyal Medya",
+            "seo_hizmeti": "Seo Hizmeti",
+            "video_cekimi": "Video Çekimi",
+            "baski_isleri": "Baskı İşleri",
             "diger": "Diğer"
         }
 

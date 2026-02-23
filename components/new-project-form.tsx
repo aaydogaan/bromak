@@ -21,7 +21,7 @@ export function NewProjectForm() {
     client: '',
     description: '',
     status: 'planning' as 'planning' | 'in_progress' | 'on_hold' | 'completed' | 'cancelled',
-    project_type: 'web_site' as 'web_site' | 'sosyal_medya' | 'diger',
+    project_type: 'web_site' as 'web_site' | 'sosyal_medya' | 'seo_hizmeti' | 'video_cekimi' | 'baski_isleri' | 'diger',
     budget: '',
     location: '',
     start_date: '',
@@ -215,6 +215,9 @@ export function NewProjectForm() {
               <SelectContent>
                 <SelectItem value="web_site">Web Sitesi</SelectItem>
                 <SelectItem value="sosyal_medya">Sosyal Medya</SelectItem>
+                <SelectItem value="seo_hizmeti">Seo Hizmeti</SelectItem>
+                <SelectItem value="video_cekimi">Video Çekimi</SelectItem>
+                <SelectItem value="baski_isleri">Baskı İşleri</SelectItem>
                 <SelectItem value="diger">Diğer</SelectItem>
               </SelectContent>
             </Select>
