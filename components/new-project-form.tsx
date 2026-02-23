@@ -8,12 +8,13 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon } from "lucide-react"
+import { CalendarIcon, Check, ChevronsUpDown } from "lucide-react"
 import { format } from "date-fns"
 import { tr } from "date-fns/locale"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import { supabase } from "@/lib/supabase"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 
 export function NewProjectForm() {
   const [formData, setFormData] = useState({
@@ -34,6 +35,25 @@ export function NewProjectForm() {
   const [startDate, setStartDate] = useState<Date>()
   const [endDate, setEndDate] = useState<Date>()
   const [paymentDate, setPaymentDate] = useState<Date>()
+
+  // Müşteri listesi
+  const [customers, setCustomers] = useState<{ id: string; name: string }[]>([])
+  const [clientOpen, setClientOpen] = useState(false)
+
+  useEffect(() => {
+    supabase
+      .from('customers')
+      .select('id, first_name, last_name')
+      .order('first_name')
+      .then(({ data }) => {
+        if (data) {
+          setCustomers(data.map((c: any) => ({
+            id: c.id,
+            name: [c.first_name, c.last_name && c.last_name !== '-' ? c.last_name : ''].filter(Boolean).join(' ')
+          })))
+        }
+      })
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -149,15 +169,46 @@ export function NewProjectForm() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="client">Müşteri *</Label>
-              <Input
-                id="client"
-                name="client"
-                value={formData.client}
-                onChange={handleChange}
-                placeholder="Müşteri adı girin"
-                required
-              />
+              <Label>Müşteri *</Label>
+              <Popover open={clientOpen} onOpenChange={setClientOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={clientOpen}
+                    className={cn(
+                      "w-full justify-between font-normal bg-transparent",
+                      !formData.client && "text-muted-foreground"
+                    )}
+                  >
+                    {formData.client || "Müşteri seçin..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Müşteri ara..." />
+                    <CommandList>
+                      <CommandEmpty>Müşteri bulunamadı.</CommandEmpty>
+                      <CommandGroup>
+                        {customers.map((c) => (
+                          <CommandItem
+                            key={c.id}
+                            value={c.name}
+                            onSelect={(val) => {
+                              setFormData(prev => ({ ...prev, client: val }))
+                              setClientOpen(false)
+                            }}
+                          >
+                            <Check className={cn("mr-2 h-4 w-4", formData.client === c.name ? "opacity-100" : "opacity-0")} />
+                            {c.name}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 

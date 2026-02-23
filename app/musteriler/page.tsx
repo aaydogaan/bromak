@@ -48,39 +48,67 @@ interface Client {
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([])
 
-  
-  // Supabase'den müşterileri çek
+
+  // Supabase'den müşterileri ve projeleri çek, geliri dinamik hesapla
   useEffect(() => {
     const fetchClients = async () => {
       try {
         const supabase = createClient()
-        const { data, error } = await supabase
-          .from('customers')
-          .select('*')
-          .order('created_at', { ascending: false })
+
+        // Müşterileri ve projeleri paralel çek
+        const [{ data, error }, { data: projects }] = await Promise.all([
+          supabase.from('customers').select('*').order('created_at', { ascending: false }),
+          supabase.from('projects').select('client, budget, payment_amount, status')
+        ])
 
         if (error) throw error
 
-        const formatted: Client[] = (data || []).map((c: any, idx: number) => ({
-          id: idx + 1,
-          dbId: c.id,
-          name: [c.first_name, (c.last_name && c.last_name !== '-') ? c.last_name : ''].filter(Boolean).join(' '),
-          email: c.email,
-          phone: c.phone,
-          company: c.company || (c.customer_type || 'Bireysel'),
-          customer_type: c.customer_type,
-          totalProjects: 0,
-          activeProjects: 0,
-          completedProjects: 0,
-          totalRevenue: `₺${Number(c.total_income || 0).toLocaleString('tr-TR')}`,
-          status: (c.status === 'Aktif' ? 'active' : 'inactive'),
-          projectStatus: (c.project_status ?? 'ongoing') as "ongoing" | "completed" | "paused",
-          joinDate: c.join_date ? new Date(c.join_date).toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' }) : '',
-          rawJoinDate: c.join_date || null,
-          logo: c.logo || undefined,
-          address: c.address || [c.city, c.country].filter(Boolean).join(', '),
-          notes: c.notes || undefined,
-        }))
+        // Müşteri adına göre proje bütçelerini topla
+        const revenueMap: Record<string, number> = {}
+        const projectCountMap: Record<string, number> = {}
+        const activeCountMap: Record<string, number> = {}
+        const completedCountMap: Record<string, number> = {}
+
+        for (const p of projects || []) {
+          const key = (p.client || '').trim().toLowerCase()
+          if (!key) continue
+          const amount = parseFloat(String(p.payment_amount || p.budget || '0').replace(/[^0-9.-]/g, '')) || 0
+          revenueMap[key] = (revenueMap[key] || 0) + amount
+          projectCountMap[key] = (projectCountMap[key] || 0) + 1
+          if (p.status === 'in_progress' || p.status === 'planning') {
+            activeCountMap[key] = (activeCountMap[key] || 0) + 1
+          }
+          if (p.status === 'completed') {
+            completedCountMap[key] = (completedCountMap[key] || 0) + 1
+          }
+        }
+
+        const formatted: Client[] = (data || []).map((c: any, idx: number) => {
+          const fullName = [c.first_name, (c.last_name && c.last_name !== '-') ? c.last_name : ''].filter(Boolean).join(' ')
+          const key = fullName.trim().toLowerCase()
+          const dynamicRevenue = revenueMap[key] ?? 0
+
+          return {
+            id: idx + 1,
+            dbId: c.id,
+            name: fullName,
+            email: c.email,
+            phone: c.phone,
+            company: c.company || (c.customer_type || 'Bireysel'),
+            customer_type: c.customer_type,
+            totalProjects: projectCountMap[key] ?? 0,
+            activeProjects: activeCountMap[key] ?? 0,
+            completedProjects: completedCountMap[key] ?? 0,
+            totalRevenue: `₺${dynamicRevenue.toLocaleString('tr-TR')}`,
+            status: (c.status === 'Aktif' ? 'active' : 'inactive'),
+            projectStatus: (c.project_status ?? 'ongoing') as "ongoing" | "completed" | "paused",
+            joinDate: c.join_date ? new Date(c.join_date).toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' }) : '',
+            rawJoinDate: c.join_date || null,
+            logo: c.logo || undefined,
+            address: c.address || [c.city, c.country].filter(Boolean).join(', '),
+            notes: c.notes || undefined,
+          }
+        })
         setClients(formatted)
       } catch (e) {
         console.error('Müşteriler yüklenirken hata:', e)
@@ -96,7 +124,7 @@ export default function ClientsPage() {
   const [editingClient, setEditingClient] = useState<Client | null>(null)
   const [editForm, setEditForm] = useState({ name: "", email: "", phone: "", company: "", income: "", notes: "", projectStatus: "ongoing" as "ongoing" | "completed" | "paused", joinDate: "" })
   const [isCreateOpen, setIsCreateOpen] = useState(false)
-  const [createForm, setCreateForm] = useState({ name: "", email: "", phone: "", company: "", income: "", notes: "", projectStatus: "ongoing" as "ongoing" | "completed" | "paused", joinDate: new Date().toISOString().slice(0,10) })
+  const [createForm, setCreateForm] = useState({ name: "", email: "", phone: "", company: "", income: "", notes: "", projectStatus: "ongoing" as "ongoing" | "completed" | "paused", joinDate: new Date().toISOString().slice(0, 10) })
   const [createStep, setCreateStep] = useState(1)
 
   const handleViewDetails = (client: Client) => {
@@ -125,7 +153,7 @@ export default function ClientsPage() {
       income: incomeNumber,
       notes: client.notes || "",
       projectStatus: client.projectStatus,
-      joinDate: client.rawJoinDate ? String(client.rawJoinDate).slice(0,10) : "",
+      joinDate: client.rawJoinDate ? String(client.rawJoinDate).slice(0, 10) : "",
     })
     setIsEditOpen(true)
   }
@@ -262,7 +290,7 @@ export default function ClientsPage() {
       }
       setClients((prev) => [newClient, ...prev])
       setIsCreateOpen(false)
-      setCreateForm({ name: "", email: "", phone: "", company: "", income: "", notes: "", projectStatus: "ongoing", joinDate: new Date().toISOString().slice(0,10) })
+      setCreateForm({ name: "", email: "", phone: "", company: "", income: "", notes: "", projectStatus: "ongoing", joinDate: new Date().toISOString().slice(0, 10) })
     } catch (e) {
       console.error('Yeni müşteri eklenirken hata:', e)
       alert('Yeni müşteri eklenirken bir hata oluştu.')
@@ -321,7 +349,7 @@ export default function ClientsPage() {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {clients.map((client) => (
               <ClientCard
-                key={client.id}
+                key={client.dbId || client.id}
                 client={client}
                 onViewDetails={handleViewDetails}
                 onEdit={handleEdit}

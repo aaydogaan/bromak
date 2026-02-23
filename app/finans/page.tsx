@@ -6,8 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { createClient } from "@/lib/supabase/client"
 import Money from "@/components/money"
 import { TrendingUp, TrendingDown, DollarSign, PiggyBank, Percent, AlertTriangle, CheckCircle2, FileSpreadsheet } from "lucide-react"
-import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, Line, LineChart, Legend } from "recharts"
-import { Pie, PieChart, Cell } from "recharts"
+import { ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, Line, Legend, ComposedChart, Bar, Cell, ReferenceLine, Pie, PieChart } from "recharts"
 import { Button } from "@/components/ui/button"
 import * as XLSX from 'xlsx'
 
@@ -20,6 +19,12 @@ interface MonthlyData {
     profit: number
     margin: number
     projectCount: number
+    web_site: number
+    sosyal_medya: number
+    seo_hizmeti: number
+    video_cekimi: number
+    baski_isleri: number
+    diger: number
 }
 
 export default function FinancialAnalysisPage() {
@@ -164,7 +169,13 @@ export default function FinancialAnalysisPage() {
                 expense: 0,
                 profit: 0,
                 margin: 0,
-                projectCount: 0
+                projectCount: 0,
+                web_site: 0,
+                sosyal_medya: 0,
+                seo_hizmeti: 0,
+                video_cekimi: 0,
+                baski_isleri: 0,
+                diger: 0
             }
         }
 
@@ -184,6 +195,12 @@ export default function FinancialAnalysisPage() {
             if (months[key]) {
                 months[key].revenue += amount
                 months[key].projectCount += 1
+                const t = project.project_type || 'diger'
+                if (t in months[key]) {
+                    (months[key] as any)[t] += amount
+                } else {
+                    months[key].diger += amount
+                }
             }
 
             const type = project.project_type || 'diger'
@@ -319,17 +336,48 @@ export default function FinancialAnalysisPage() {
 
     const formatCurrency = (value: number) => `₺${value.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
 
-    const CustomTooltip = ({ active, payload }: any) => {
+    const CustomTooltip = ({ active, payload, label }: any) => {
         if (active && payload && payload.length) {
+            const d = payload[0]?.payload
+            const types = [
+                { key: 'web_site', label: 'Web Sitesi', color: '#6366f1' },
+                { key: 'sosyal_medya', label: 'Sosyal Medya', color: '#22c55e' },
+                { key: 'seo_hizmeti', label: 'Seo Hizmeti', color: '#f59e0b' },
+                { key: 'video_cekimi', label: 'Video Çekimi', color: '#f97316' },
+                { key: 'baski_isleri', label: 'Baskı İşleri', color: '#ec4899' },
+                { key: 'diger', label: 'Diğer', color: '#64748b' },
+            ]
+            const activeTypes = types.filter(t => (d?.[t.key] ?? 0) > 0)
             return (
-                <div className="rounded-xl border border-border bg-card/95 p-3 shadow-lg backdrop-blur-sm">
-                    <p className="text-xs text-muted-foreground mb-2">{payload[0].payload.month}</p>
-                    <div className="space-y-1">
-                        <p className="text-xs text-emerald-500">Gelir: {formatCurrency(payload[0].payload.revenue)}</p>
-                        <p className="text-xs text-rose-500">Gider: {formatCurrency(payload[0].payload.expense)}</p>
-                        <p className={`text-xs font-semibold ${payload[0].payload.profit >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                            Kâr: {formatCurrency(payload[0].payload.profit)}
-                        </p>
+                <div className="rounded-xl border border-border bg-card/95 p-4 shadow-xl backdrop-blur-sm min-w-[190px]">
+                    <p className="text-xs font-bold text-foreground mb-3 border-b border-border/50 pb-2">{label}</p>
+                    <div className="space-y-1.5">
+                        {activeTypes.map(t => (
+                            <div key={t.key} className="flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-1.5">
+                                    <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: t.color }} />
+                                    <span className="text-xs text-muted-foreground">{t.label}</span>
+                                </div>
+                                <span className="text-xs font-semibold" style={{ color: t.color }}>{formatCurrency(d?.[t.key] ?? 0)}</span>
+                            </div>
+                        ))}
+                        {activeTypes.length > 0 && <div className="border-t border-border/50 pt-1.5" />}
+                        <div className="flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-1.5">
+                                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />
+                                <span className="text-xs font-semibold text-muted-foreground">Toplam Gelir</span>
+                            </div>
+                            <span className="text-xs font-bold text-emerald-500">{formatCurrency(d?.revenue ?? 0)}</span>
+                        </div>
+                        {(d?.expense ?? 0) > 0 && (
+                            <div className="flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-1.5">
+                                    <span className="w-2.5 h-2.5 rounded-sm bg-rose-500 inline-block" />
+                                    <span className="text-xs text-muted-foreground">Gider</span>
+                                </div>
+                                <span className="text-xs font-semibold text-rose-500">{formatCurrency(d?.expense ?? 0)}</span>
+                            </div>
+                        )}
                     </div>
                 </div>
             )
@@ -465,24 +513,96 @@ export default function FinancialAnalysisPage() {
                         </Card>
                     </div>
 
-                    {/* Gelir vs Gider Chart */}
+                    {/* Gelir Dağılımı Chart — referans tarz */}
                     <Card className="glass-effect">
-                        <CardHeader>
-                            <CardTitle>Gelir vs Gider Trendi</CardTitle>
+                        <CardHeader className="pb-2">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                <div>
+                                    <CardTitle>Gelir Dağılımı</CardTitle>
+                                    <p className="text-xs text-muted-foreground mt-1">Proje türlerine göre aylık gelir çubukları ve toplam gelir trendi</p>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-3 text-xs">
+                                    {([
+                                        { key: 'web_site', label: 'Web Sitesi', color: '#6366f1' },
+                                        { key: 'sosyal_medya', label: 'Sosyal Medya', color: '#22c55e' },
+                                        { key: 'seo_hizmeti', label: 'Seo Hizmeti', color: '#f59e0b' },
+                                        { key: 'video_cekimi', label: 'Video Çekimi', color: '#f97316' },
+                                        { key: 'baski_isleri', label: 'Baskı İşleri', color: '#ec4899' },
+                                        { key: 'diger', label: 'Diğer', color: '#64748b' },
+                                    ] as const).map(t => (
+                                        <span key={t.key} className="flex items-center gap-1.5">
+                                            <span className="w-3 h-3 rounded-sm inline-block" style={{ background: t.color }} />
+                                            {t.label}
+                                        </span>
+                                    ))}
+                                    <span className="flex items-center gap-1.5">
+                                        <span className="w-6 h-0.5 rounded-full bg-emerald-500 inline-block" style={{ borderTop: '2px dashed #10b981', background: 'transparent' }} />
+                                        <span className="w-5 h-0 border-t-2 border-dashed border-emerald-500 inline-block" />
+                                        Toplam
+                                    </span>
+                                </div>
+                            </div>
                         </CardHeader>
                         <CardContent>
-                            <div className="h-[300px]">
+                            <div className="h-[380px]">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <LineChart data={monthlyData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                                        <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                                        <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickFormatter={(v) => `₺${(v / 1000).toFixed(0)}k`} />
-                                        <Tooltip content={<CustomTooltip />} />
-                                        <Legend />
-                                        <Line type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2} name="Gelir" dot={{ r: 3 }} />
-                                        <Line type="monotone" dataKey="expense" stroke="#f43f5e" strokeWidth={2} name="Gider" dot={{ r: 3 }} />
-                                        <Line type="monotone" dataKey="profit" stroke="#3b82f6" strokeWidth={2} name="Kâr" dot={{ r: 3 }} />
-                                    </LineChart>
+                                    <ComposedChart data={monthlyData} margin={{ top: 28, right: 20, left: 0, bottom: 8 }} barCategoryGap="28%">
+                                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} vertical={false} />
+                                        <XAxis
+                                            dataKey="month"
+                                            fontSize={12}
+                                            tickLine={false}
+                                            axisLine={false}
+                                            stroke="hsl(var(--muted-foreground))"
+                                        />
+                                        <YAxis
+                                            fontSize={11}
+                                            tickLine={false}
+                                            axisLine={false}
+                                            stroke="hsl(var(--muted-foreground))"
+                                            tickFormatter={(v) => v >= 1000 ? `₺${(v / 1000).toFixed(0)}k` : `₺${v}`}
+                                            width={56}
+                                        />
+                                        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted))', opacity: 0.25, radius: 6 }} />
+
+                                        {/* Yığılmış çubuklar — proje türü */}
+                                        <Bar dataKey="web_site" name="Web Sitesi" stackId="rev" fill="#6366f1" maxBarSize={72}>
+                                        </Bar>
+                                        <Bar dataKey="sosyal_medya" name="Sosyal Medya" stackId="rev" fill="#22c55e" maxBarSize={72}>
+                                        </Bar>
+                                        <Bar dataKey="seo_hizmeti" name="Seo Hizmeti" stackId="rev" fill="#f59e0b" maxBarSize={72}>
+                                        </Bar>
+                                        <Bar dataKey="video_cekimi" name="Video Çekimi" stackId="rev" fill="#f97316" maxBarSize={72}>
+                                        </Bar>
+                                        <Bar dataKey="baski_isleri" name="Baskı İşleri" stackId="rev" fill="#ec4899" maxBarSize={72}>
+                                        </Bar>
+                                        <Bar dataKey="diger" name="Diğer" stackId="rev" fill="#64748b" radius={[6, 6, 0, 0]} maxBarSize={72}>
+                                        </Bar>
+
+                                        {/* Toplam gelir trendi çizgisi */}
+                                        <Line
+                                            type="monotone"
+                                            dataKey="revenue"
+                                            name="Toplam Gelir"
+                                            stroke="#10b981"
+                                            strokeWidth={2.5}
+                                            strokeDasharray="6 3"
+                                            dot={(props: any) => {
+                                                const { cx, cy, payload } = props
+                                                return <circle key={`dot-${cx}`} cx={cx} cy={cy} r={5} fill="#10b981" stroke="white" strokeWidth={2} />
+                                            }}
+                                            label={(props: any) => {
+                                                const { x, y, value } = props
+                                                if (!value) return null
+                                                return (
+                                                    <text x={x} y={y - 10} textAnchor="middle" fontSize={10} fontWeight={600} fill="#10b981">
+                                                        {value >= 1000 ? `₺${(value / 1000).toFixed(1)}k` : `₺${value}`}
+                                                    </text>
+                                                )
+                                            }}
+                                            activeDot={{ r: 7, stroke: 'white', strokeWidth: 2 }}
+                                        />
+                                    </ComposedChart>
                                 </ResponsiveContainer>
                             </div>
                         </CardContent>

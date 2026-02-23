@@ -159,12 +159,12 @@ export default function StatisticsPage() {
         unknown: 'hsl(var(--border))',
       }
       const typePalette: Record<string, string> = {
-        web_site: 'hsl(var(--primary))',
-        sosyal_medya: 'hsl(var(--secondary))',
-        seo_hizmeti: 'hsl(var(--accent))',
-        video_cekimi: '#f97316',
-        baski_isleri: '#ec4899',
-        diger: 'hsl(var(--muted))',
+        web_site: '#6366f1', // indigo
+        sosyal_medya: '#22c55e', // yeşil
+        seo_hizmeti: '#f59e0b', // amber
+        video_cekimi: '#f97316', // turuncu
+        baski_isleri: '#ec4899', // pembe
+        diger: '#64748b', // slate
       }
       const rows = Array.from(statusCounts.entries()).map(([name, value]) => ({ name: mapStatus(name), value, color: palette[name] || 'hsl(var(--border))' }))
       setStatusData(rows)
