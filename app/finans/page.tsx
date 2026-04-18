@@ -33,6 +33,7 @@ export default function FinancialAnalysisPage() {
     const [loading, setLoading] = useState(true)
     const [period, setPeriod] = useState<PeriodFilter>("this-month")
     const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([])
+    const [showAllMonths, setShowAllMonths] = useState(false)
 
     // Summary stats
     const [totalRevenue, setTotalRevenue] = useState(0)
@@ -753,7 +754,10 @@ export default function FinancialAnalysisPage() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {monthlyData.map((month, idx) => (
+                                        {[...monthlyData]
+                                            .reverse()
+                                            .slice(0, showAllMonths ? monthlyData.length : 6)
+                                            .map((month, idx) => (
                                             <tr key={idx} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                                                 <td className="py-3 px-4 font-medium">{month.month}</td>
                                                 <td className="py-3 px-4 text-right text-emerald-500">
@@ -776,6 +780,18 @@ export default function FinancialAnalysisPage() {
                                     </tbody>
                                 </table>
                             </div>
+                            {monthlyData.length > 6 && (
+                                <div className="flex justify-center pt-6 mt-2 border-t border-border/50">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-muted-foreground hover:text-primary transition-all gap-2"
+                                        onClick={() => setShowAllMonths(!showAllMonths)}
+                                    >
+                                        {showAllMonths ? "Daha Az Göster" : `Tümünü Gör (${monthlyData.length} Ay)`}
+                                    </Button>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
 
