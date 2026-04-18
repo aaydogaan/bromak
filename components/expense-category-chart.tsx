@@ -27,18 +27,31 @@ export function ExpenseCategoryChart({ data }: { data: CategoryData[] }) {
                                     nameKey="name"
                                     cx="50%"
                                     cy="50%"
+                                    innerRadius={70}
                                     outerRadius={90}
-                                    label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                    paddingAngle={3}
+                                    stroke="none"
                                 >
                                     {data.map((entry, idx) => (
                                         <Cell key={`cat-${idx}`} fill={entry.color} />
                                     ))}
                                 </Pie>
                                 <Tooltip
-                                    formatter={(value: number) => `₺${value.toLocaleString('tr-TR')}`}
-                                    contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '12px' }}
+                                    formatter={(value: number) => [`₺${value.toLocaleString('tr-TR')}`, 'Harcama']}
+                                    contentStyle={{ borderRadius: '12px', border: '1px solid hsl(var(--border))', backgroundColor: 'hsl(var(--card))', color: 'hsl(var(--foreground))' }}
+                                    itemStyle={{ color: 'hsl(var(--foreground))', fontWeight: '500' }}
                                 />
-                                <Legend />
+                                <Legend 
+                                    verticalAlign="bottom" 
+                                    height={36} 
+                                    iconType="circle"
+                                    formatter={(value, entry: any) => {
+                                      const item = data.find(t => t.name === value)
+                                      const total = data.reduce((acc, curr) => acc + curr.value, 0)
+                                      const percent = item && total > 0 ? ((item.value / total) * 100).toFixed(1) : 0
+                                      return <span className="text-foreground font-medium ml-1">{value} <span className="text-muted-foreground ml-1">%{percent}</span></span>
+                                    }}
+                                />
                             </PieChart>
                         </ResponsiveContainer>
                     </div>

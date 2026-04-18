@@ -72,7 +72,9 @@ export default function ClientsPage() {
         for (const p of projects || []) {
           const key = (p.client || '').trim().toLowerCase()
           if (!key) continue
-          const amount = parseFloat(String(p.payment_amount || p.budget || '0').replace(/[^0-9.-]/g, '')) || 0
+          const rawAmount = String(p.payment_amount || p.budget || '0');
+          const normalized = rawAmount.replace(/[^0-9,.-]/g, '').replace(/\./g, '').replace(',', '.');
+          const amount = parseFloat(normalized) || 0;
           revenueMap[key] = (revenueMap[key] || 0) + amount
           projectCountMap[key] = (projectCountMap[key] || 0) + 1
           if (p.status === 'in_progress' || p.status === 'planning') {

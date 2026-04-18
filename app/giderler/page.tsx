@@ -15,6 +15,7 @@ import { AddExpenseModal } from "@/components/add-expense-modal"
 import { ExpenseDetailModal } from "@/components/expense-detail-modal"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Money from "@/components/money"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface Expense {
     id: string
@@ -35,8 +36,8 @@ export default function ExpensesPage() {
     const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
     const [viewingExpense, setViewingExpense] = useState<Expense | null>(null)
     const [deletingId, setDeletingId] = useState<string | null>(null)
-    const [sortBy, setSortBy] = useState("date-desc")
-    const [dateFilter, setDateFilter] = useState("all")
+    const [sortBy, setSortBy] = useState("created-desc")
+    const [dateFilter, setDateFilter] = useState("this-month")
     const [searchQuery, setSearchQuery] = useState("")
     const [showAll, setShowAll] = useState(false)
 
@@ -48,7 +49,7 @@ export default function ExpensesPage() {
             const { data, error } = await supabase
                 .from('expenses')
                 .select('*')
-                .order('date', { ascending: false })
+                .order('created_at', { ascending: false })
 
             if (error) throw error
             setExpenses(data || [])
@@ -112,6 +113,7 @@ export default function ExpensesPage() {
         }
 
         // Sorting
+        if (sortBy === "created-desc") filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         if (sortBy === "date-desc") filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
         if (sortBy === "date-asc") filtered.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
         if (sortBy === "amount-desc") filtered.sort((a, b) => b.amount - a.amount)
@@ -284,33 +286,38 @@ export default function ExpensesPage() {
                                         Excel
                                     </Button>
 
-                                    <div className="flex items-center gap-1.5 border rounded-md px-2 h-8 bg-background/50">
-                                        <Filter className="h-3.5 w-3.5 text-muted-foreground" />
-                                        <select
-                                            value={dateFilter}
-                                            onChange={(e) => setDateFilter(e.target.value)}
-                                            className="bg-transparent text-xs outline-none cursor-pointer pr-1"
-                                        >
-                                            <option value="all">Tüm Zamanlar</option>
-                                            <option value="this-month">Bu Ay</option>
-                                            <option value="last-month">Geçen Ay</option>
-                                            <option value="last-3-months">Son 3 Ay</option>
-                                            <option value="last-6-months">Son 6 Ay</option>
-                                        </select>
-                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Select value={dateFilter} onValueChange={setDateFilter}>
+                                            <SelectTrigger className="h-8 text-xs border-dashed w-[140px] bg-background/50 focus:ring-0">
+                                                <div className="flex items-center gap-2">
+                                                    <Filter className="h-3.5 w-3.5 text-muted-foreground" />
+                                                    <SelectValue placeholder="Zaman Filtresi" />
+                                                </div>
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">Tüm Zamanlar</SelectItem>
+                                                <SelectItem value="this-month">Bu Ay</SelectItem>
+                                                <SelectItem value="last-month">Geçen Ay</SelectItem>
+                                                <SelectItem value="last-3-months">Son 3 Ay</SelectItem>
+                                                <SelectItem value="last-6-months">Son 6 Ay</SelectItem>
+                                            </SelectContent>
+                                        </Select>
 
-                                    <div className="flex items-center gap-1.5 border rounded-md px-2 h-8 bg-background/50">
-                                        <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
-                                        <select
-                                            value={sortBy}
-                                            onChange={(e) => setSortBy(e.target.value)}
-                                            className="bg-transparent text-xs outline-none cursor-pointer pr-1"
-                                        >
-                                            <option value="date-desc">En Yeni</option>
-                                            <option value="date-asc">En Eski</option>
-                                            <option value="amount-desc">En Yüksek</option>
-                                            <option value="amount-asc">En Düşük</option>
-                                        </select>
+                                        <Select value={sortBy} onValueChange={setSortBy}>
+                                            <SelectTrigger className="h-8 text-xs border-dashed w-[160px] bg-background/50 focus:ring-0">
+                                                <div className="flex items-center gap-2">
+                                                    <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+                                                    <SelectValue placeholder="Sırala" />
+                                                </div>
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="created-desc">Son Eklenenler</SelectItem>
+                                                <SelectItem value="date-desc">Tarihe Göre (Yeni)</SelectItem>
+                                                <SelectItem value="date-asc">Tarihe Göre (Eski)</SelectItem>
+                                                <SelectItem value="amount-desc">En Yüksek</SelectItem>
+                                                <SelectItem value="amount-asc">En Düşük</SelectItem>
+                                            </SelectContent>
+                                        </Select>
                                     </div>
                                 </div>
                             </div>

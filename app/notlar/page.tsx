@@ -22,6 +22,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 
 type Priority = 'düşük' | 'Orta' | 'yüksek'
 
@@ -88,23 +89,6 @@ export default function NotlarPage() {
             default:
               return 'from-slate-500/20 to-gray-500/20'
           }
-
-  const toggleEventDone = async (ev: UIEvent) => {
-    try {
-      const supabase = createClient()
-      const next: EventStatus = ev.status === 'done' ? 'planned' : 'done'
-      const { error } = await supabase
-        .from('events')
-        .update({ status: next })
-        .eq('id', ev.dbId)
-      if (error) throw error
-      setEvents((prev) => prev.map(e => e.dbId === ev.dbId ? { ...e, status: next } : e))
-      setEventToView((prev) => (prev && prev.dbId === ev.dbId ? { ...prev, status: next } : prev))
-    } catch (e) {
-      console.error('Olay güncellenirken hata:', e)
-      alert('Durum güncellenemedi.')
-    }
-  }
         }
 
         const formatted: UINote[] = (data || []).map((n: any, idx: number) => ({
@@ -211,7 +195,8 @@ export default function NotlarPage() {
 
   return (
     <PageWrapper>
-      <div className="space-y-6">
+      <div className="p-4 md:p-8">
+        <div className="mx-auto max-w-7xl space-y-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Notlar</h1>
@@ -262,11 +247,11 @@ export default function NotlarPage() {
                   <SelectValue placeholder="Kategori seçin" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="sosyal_medya">sosyal_medya</SelectItem>
-                  <SelectItem value="domain">domain</SelectItem>
-                  <SelectItem value="genel">genel</SelectItem>
-                  <SelectItem value="finans">finans</SelectItem>
-                  <SelectItem value="görev">görev</SelectItem>
+                  <SelectItem value="sosyal_medya">Sosyal Medya</SelectItem>
+                  <SelectItem value="domain">Domain Müşterisi</SelectItem>
+                  <SelectItem value="genel">Genel Not</SelectItem>
+                  <SelectItem value="finans">Finansal Not</SelectItem>
+                  <SelectItem value="görev">Manuel Görev</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -277,9 +262,9 @@ export default function NotlarPage() {
                   <SelectValue placeholder="Durum seçin" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="planned">planned</SelectItem>
-                  <SelectItem value="in_progress">in_progress</SelectItem>
-                  <SelectItem value="done">done</SelectItem>
+                  <SelectItem value="planned">Planlandı</SelectItem>
+                  <SelectItem value="in_progress">Devam Ediyor</SelectItem>
+                  <SelectItem value="done">Tamamlandı</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -359,75 +344,107 @@ export default function NotlarPage() {
       </Dialog>
 
         {/* İki sütun: Sol Olaylar, Sağ Notlar */}
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-6 lg:grid-cols-12 items-start">
+          
           {/* Sol: Olaylar */}
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Olaylar</h2>
-            <div className="space-y-3">
-              {events.slice(0, 5).map((ev) => (
-                <div
-                  key={ev.dbId}
-                  className="rounded-lg border bg-card p-4 cursor-pointer hover:bg-accent/30 transition-colors"
-                  onClick={() => setEventToView(ev)}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="font-medium text-foreground truncate">{ev.title}</p>
-                      {ev.description && (
-                        <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{ev.description}</p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        className="rounded p-1 hover:bg-accent/50"
-                        aria-label={ev.status === 'done' ? 'Yapılmadı olarak işaretle' : 'Tamamlandı olarak işaretle'}
-                        onClick={(e) => { e.stopPropagation(); toggleEventDone(ev) }}
-                      >
-                        {ev.status === 'done' ? <CheckCircle className="h-5 w-5 text-green-600" /> : <Circle className="h-5 w-5 text-muted-foreground" />}
-                      </button>
-                      <div className="text-xs text-muted-foreground">
-                        {new Date(ev.happenedAt).toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' })}
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-7 w-7 text-destructive hover:bg-destructive/10 bg-transparent border-destructive/30"
-                        onClick={(e) => { e.stopPropagation(); setEventToDelete(ev) }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+          <div className="lg:col-span-4">
+            <Card className="glass-effect shadow-sm h-full">
+              <CardHeader className="pb-3 border-b border-border/40">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-xl">Zaman Çizelgesi</CardTitle>
+                    <CardDescription className="mt-1">Yaklaşan ve tamamlanan olaylar</CardDescription>
                   </div>
-                </div>
-              ))}
-              {events.length === 0 && (
-                <div className="text-sm text-muted-foreground">Henüz olay eklenmemiş.</div>
-              )}
-              {events.length > 5 && (
-                <div className="pt-2">
-                  <Button variant="outline" className="w-full bg-transparent" onClick={() => setIsAllEventsOpen(true)}>
-                    Tümünü Gör
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => setIsAddEventOpen(true)}>
+                    <Plus className="h-4 w-4" />
                   </Button>
                 </div>
-              )}
-            </div>
+              </CardHeader>
+              <CardContent className="p-4 space-y-3">
+                {events.slice(0, 5).map((ev) => (
+                  <div
+                    key={ev.dbId}
+                    className="relative rounded-xl border bg-background/50 p-4 hover:bg-accent/20 hover:border-primary/20 transition-all cursor-pointer group"
+                    onClick={() => setEventToView(ev)}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-sm text-foreground truncate group-hover:text-primary transition-colors">{ev.title}</p>
+                        {ev.description && (
+                          <p className="mt-1 text-xs text-muted-foreground line-clamp-2 leading-relaxed">{ev.description}</p>
+                        )}
+                        <div className="flex items-center gap-2 mt-3">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-secondary/20 text-secondary-foreground">
+                            {ev.category === 'sosyal_medya' ? 'Sosyal Medya' : ev.category === 'domain' ? 'Domain' : ev.category === 'finans' ? 'Finans' : ev.category === 'görev' ? 'Görev' : 'Genel'}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground font-medium">
+                            {new Date(ev.happenedAt).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-2 isolate">
+                        <button
+                          className="rounded-full p-1 -m-1 transition-colors hover:bg-accent focus:outline-none"
+                          aria-label={ev.status === 'done' ? 'Yapılmadı olarak işaretle' : 'Tamamlandı olarak işaretle'}
+                          onClick={(e) => { e.stopPropagation(); toggleEventDone(ev) }}
+                        >
+                          {ev.status === 'done' ? <CheckCircle className="h-6 w-6 text-emerald-500 bg-emerald-500/10 rounded-full" /> : <Circle className="h-6 w-6 text-muted-foreground/30 hover:text-muted-foreground" />}
+                        </button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => { e.stopPropagation(); setEventToDelete(ev) }}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {events.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-8 text-center border-2 border-dashed rounded-xl border-muted">
+                    <Circle className="h-8 w-8 text-muted-foreground/30 mb-2" />
+                    <p className="text-sm font-medium text-muted-foreground">Henüz olay eklenmemiş</p>
+                    <Button variant="link" size="sm" onClick={() => setIsAddEventOpen(true)}>Olay Oluştur</Button>
+                  </div>
+                )}
+                {events.length > 5 && (
+                  <div className="pt-3">
+                    <Button variant="outline" size="sm" className="w-full text-xs" onClick={() => setIsAllEventsOpen(true)}>
+                      Tümünü Gör
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
 
           {/* Sağ: Notlar */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-8">
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-2">
               {filteredNotes.map((note) => (
                 <NoteCard key={note.dbId} note={note} onDelete={(n) => setNoteToDelete(n as any)} />
               ))}
             </div>
             {!loading && filteredNotes.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <p className="text-lg font-medium text-muted-foreground">Not bulunamadı</p>
-                <p className="mt-2 text-sm text-muted-foreground">Arama kriterlerinizi değiştirmeyi deneyin</p>
-              </div>
+              <Card className="glass-effect border-dashed">
+                <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                    <Search className="h-6 w-6 text-primary" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-foreground">Not bulunamadı</h3>
+                  <p className="mt-1 text-sm text-muted-foreground max-w-sm mx-auto">Arama kriterlerinize uygun not bulunamadı veya henüz hiç not eklemediniz.</p>
+                  <Button className="mt-6" onClick={() => setIsAddModalOpen(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    İlk Notunu Ekle
+                  </Button>
+                </CardContent>
+              </Card>
             )}
           </div>
         </div>
+      </div>
       </div>
 
       {/* Tüm Olaylar Popup */}

@@ -9,6 +9,8 @@ import { TrendingUp, TrendingDown, DollarSign, PiggyBank, Percent, AlertTriangle
 import { ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, Line, Legend, ComposedChart, Bar, Cell, ReferenceLine, Pie, PieChart } from "recharts"
 import { Button } from "@/components/ui/button"
 import * as XLSX from 'xlsx'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { CalendarDays } from "lucide-react"
 
 type PeriodFilter = "this-month" | "last-month" | "last-3-months" | "last-6-months" | "this-year" | "all"
 
@@ -97,8 +99,8 @@ export default function FinancialAnalysisPage() {
                 .from('expenses')
                 .select('category, amount, date')
 
-            // For chart: always show last 3 months
-            const chartStartDate = new Date(now.getFullYear(), now.getMonth() - 2, 1)
+            // For chart: always show last 12 months
+            const chartStartDate = new Date(now.getFullYear(), now.getMonth() - 11, 1)
             const chartEndDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
 
             // Filter projects for chart (last 3 months)
@@ -155,8 +157,8 @@ export default function FinancialAnalysisPage() {
         // Generate months - always show last 3 months for chart
         const months: { [key: string]: MonthlyData } = {}
 
-        // Always show last 3 months
-        const monthsToShow = 3
+        // Always show last 12 months
+        const monthsToShow = 12
 
         // Generate months from oldest to newest
         for (let i = monthsToShow - 1; i >= 0; i--) {
@@ -190,7 +192,16 @@ export default function FinancialAnalysisPage() {
             const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 
             const amountSource = project.payment_amount || project.budget
-            const amount = parseFloat(String(amountSource || '0').replace(/[^0-9.-]/g, ''))
+            const raw = String(amountSource || '').trim()
+            let amount = 0;
+            if (raw) {
+                const normalized = raw.replace(/[^0-9,.-]/g, '').replace(/\./g, '').replace(',', '.')
+                amount = parseFloat(normalized)
+                if (!Number.isFinite(amount)) {
+                    const digits = raw.replace(/\D/g, '')
+                    amount = digits ? parseFloat(digits) : 0
+                }
+            }
 
             if (months[key]) {
                 months[key].revenue += amount
@@ -241,7 +252,16 @@ export default function FinancialAnalysisPage() {
         let totalRev = 0
         for (const project of periodProjects) {
             const amountSource = project.payment_amount || project.budget
-            const amount = parseFloat(String(amountSource || '0').replace(/[^0-9.-]/g, ''))
+            const raw = String(amountSource || '').trim()
+            let amount = 0;
+            if (raw) {
+                const normalized = raw.replace(/[^0-9,.-]/g, '').replace(/\./g, '').replace(',', '.')
+                amount = parseFloat(normalized)
+                if (!Number.isFinite(amount)) {
+                    const digits = raw.replace(/\D/g, '')
+                    amount = digits ? parseFloat(digits) : 0
+                }
+            }
             totalRev += amount
         }
 
@@ -336,6 +356,30 @@ export default function FinancialAnalysisPage() {
 
     const formatCurrency = (value: number) => `₺${value.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
 
+    const BarTooltip = ({ active, payload, label }: any) => {
+        if (active && payload && payload.length) {
+            return (
+                <div className="rounded-xl border shadow-2xl p-4 min-w-[160px] bg-white dark:bg-slate-950 !opacity-100 z-50 relative isolate">
+                    <p className="text-xs font-bold text-slate-900 dark:text-white mb-3 border-b border-slate-200 dark:border-slate-800 pb-2">{label}</p>
+                    <div className="space-y-3">
+                        {payload.map((item: any) => (
+                            <div key={item.dataKey} className="flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: item.color }} />
+                                    <span className="text-xs font-medium text-slate-600 dark:text-slate-300">{item.name}</span>
+                                </div>
+                                <span className="text-xs font-bold" style={{ color: item.color }}>
+                                    {formatCurrency(item.value)}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )
+        }
+        return null
+    }
+
     const CustomTooltip = ({ active, payload, label }: any) => {
         if (active && payload && payload.length) {
             const d = payload[0]?.payload
@@ -406,19 +450,23 @@ export default function FinancialAnalysisPage() {
                             <p className="mt-2 text-muted-foreground">Gelir, gider ve kârlılık analizi</p>
                         </div>
                         <div className="flex gap-3">
-                            <select
-                                className="h-10 rounded-md border bg-background px-3 text-sm"
-                                value={period}
-                                onChange={(e) => setPeriod(e.target.value as PeriodFilter)}
-                            >
-                                <option value="this-month">Bu Ay</option>
-                                <option value="last-month">Geçen Ay</option>
-                                <option value="last-3-months">Son 3 Ay</option>
-                                <option value="last-6-months">Son 6 Ay</option>
-                                <option value="this-year">Bu Yıl</option>
-                                <option value="all">Tüm Zamanlar</option>
-                            </select>
-                            <Button variant="outline" size="sm" onClick={handleExportExcel}>
+                            <Select value={period} onValueChange={(val: any) => setPeriod(val)}>
+                                <SelectTrigger className="h-10 w-[160px] bg-background">
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                                        <SelectValue placeholder="Zaman Filtresi" />
+                                    </div>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="this-month">Bu Ay</SelectItem>
+                                    <SelectItem value="last-month">Geçen Ay</SelectItem>
+                                    <SelectItem value="last-3-months">Son 3 Ay</SelectItem>
+                                    <SelectItem value="last-6-months">Son 6 Ay</SelectItem>
+                                    <SelectItem value="this-year">Bu Yıl</SelectItem>
+                                    <SelectItem value="all">Tüm Zamanlar</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Button variant="outline" className="h-10" onClick={handleExportExcel}>
                                 <FileSpreadsheet className="h-4 w-4 mr-2" />
                                 Excel İndir
                             </Button>
@@ -513,32 +561,26 @@ export default function FinancialAnalysisPage() {
                         </Card>
                     </div>
 
-                    {/* Gelir Dağılımı Chart — referans tarz */}
+                    {/* Aylık Gelir ve Gider Analizi Chart */}
                     <Card className="glass-effect">
                         <CardHeader className="pb-2">
                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                                 <div>
-                                    <CardTitle>Gelir Dağılımı</CardTitle>
-                                    <p className="text-xs text-muted-foreground mt-1">Proje türlerine göre aylık gelir çubukları ve toplam gelir trendi</p>
+                                    <CardTitle>Aylık Finansal Özet</CardTitle>
+                                    <p className="text-xs text-muted-foreground mt-1">Son görünümdeki aylara ait Gelir, Gider ve Kârlılık durumu</p>
                                 </div>
-                                <div className="flex flex-wrap items-center gap-3 text-xs">
-                                    {([
-                                        { key: 'web_site', label: 'Web Sitesi', color: '#6366f1' },
-                                        { key: 'sosyal_medya', label: 'Sosyal Medya', color: '#22c55e' },
-                                        { key: 'seo_hizmeti', label: 'Seo Hizmeti', color: '#f59e0b' },
-                                        { key: 'video_cekimi', label: 'Video Çekimi', color: '#f97316' },
-                                        { key: 'baski_isleri', label: 'Baskı İşleri', color: '#ec4899' },
-                                        { key: 'diger', label: 'Diğer', color: '#64748b' },
-                                    ] as const).map(t => (
-                                        <span key={t.key} className="flex items-center gap-1.5">
-                                            <span className="w-3 h-3 rounded-sm inline-block" style={{ background: t.color }} />
-                                            {t.label}
-                                        </span>
-                                    ))}
+                                <div className="flex items-center gap-4 text-xs font-medium">
                                     <span className="flex items-center gap-1.5">
-                                        <span className="w-6 h-0.5 rounded-full bg-emerald-500 inline-block" style={{ borderTop: '2px dashed #10b981', background: 'transparent' }} />
-                                        <span className="w-5 h-0 border-t-2 border-dashed border-emerald-500 inline-block" />
-                                        Toplam
+                                        <span className="w-3 h-3 rounded-sm bg-emerald-500 inline-block" />
+                                        Gelir
+                                    </span>
+                                    <span className="flex items-center gap-1.5">
+                                        <span className="w-3 h-3 rounded-sm bg-rose-500 inline-block" />
+                                        Gider
+                                    </span>
+                                    <span className="flex items-center gap-1.5">
+                                        <span className="w-4 h-0.5 rounded-full bg-blue-500 inline-block" />
+                                        Net Kâr
                                     </span>
                                 </div>
                             </div>
@@ -546,14 +588,15 @@ export default function FinancialAnalysisPage() {
                         <CardContent>
                             <div className="h-[380px]">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <ComposedChart data={monthlyData} margin={{ top: 28, right: 20, left: 0, bottom: 8 }} barCategoryGap="28%">
-                                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} vertical={false} />
+                                    <ComposedChart data={monthlyData} margin={{ top: 28, right: 20, left: 0, bottom: 8 }} barGap={6} barCategoryGap="20%">
+                                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} vertical={false} />
                                         <XAxis
                                             dataKey="month"
                                             fontSize={12}
                                             tickLine={false}
                                             axisLine={false}
                                             stroke="hsl(var(--muted-foreground))"
+                                            dy={10}
                                         />
                                         <YAxis
                                             fontSize={11}
@@ -563,44 +606,22 @@ export default function FinancialAnalysisPage() {
                                             tickFormatter={(v) => v >= 1000 ? `₺${(v / 1000).toFixed(0)}k` : `₺${v}`}
                                             width={56}
                                         />
-                                        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted))', opacity: 0.25, radius: 6 }} />
-
-                                        {/* Yığılmış çubuklar — proje türü */}
-                                        <Bar dataKey="web_site" name="Web Sitesi" stackId="rev" fill="#6366f1" maxBarSize={72}>
-                                        </Bar>
-                                        <Bar dataKey="sosyal_medya" name="Sosyal Medya" stackId="rev" fill="#22c55e" maxBarSize={72}>
-                                        </Bar>
-                                        <Bar dataKey="seo_hizmeti" name="Seo Hizmeti" stackId="rev" fill="#f59e0b" maxBarSize={72}>
-                                        </Bar>
-                                        <Bar dataKey="video_cekimi" name="Video Çekimi" stackId="rev" fill="#f97316" maxBarSize={72}>
-                                        </Bar>
-                                        <Bar dataKey="baski_isleri" name="Baskı İşleri" stackId="rev" fill="#ec4899" maxBarSize={72}>
-                                        </Bar>
-                                        <Bar dataKey="diger" name="Diğer" stackId="rev" fill="#64748b" radius={[6, 6, 0, 0]} maxBarSize={72}>
-                                        </Bar>
-
-                                        {/* Toplam gelir trendi çizgisi */}
+                                        <Tooltip 
+                                            content={<BarTooltip />}
+                                            cursor={{ fill: 'hsl(var(--muted))', opacity: 0.3 }}
+                                        />
+                                        
+                                        <Bar dataKey="revenue" name="Gelir" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={48} />
+                                        <Bar dataKey="expense" name="Gider" fill="#f43f5e" radius={[4, 4, 0, 0]} maxBarSize={48} />
+                                        
                                         <Line
                                             type="monotone"
-                                            dataKey="revenue"
-                                            name="Toplam Gelir"
-                                            stroke="#10b981"
-                                            strokeWidth={2.5}
-                                            strokeDasharray="6 3"
-                                            dot={(props: any) => {
-                                                const { cx, cy, payload } = props
-                                                return <circle key={`dot-${cx}`} cx={cx} cy={cy} r={5} fill="#10b981" stroke="white" strokeWidth={2} />
-                                            }}
-                                            label={(props: any) => {
-                                                const { x, y, value } = props
-                                                if (!value) return null
-                                                return (
-                                                    <text x={x} y={y - 10} textAnchor="middle" fontSize={10} fontWeight={600} fill="#10b981">
-                                                        {value >= 1000 ? `₺${(value / 1000).toFixed(1)}k` : `₺${value}`}
-                                                    </text>
-                                                )
-                                            }}
-                                            activeDot={{ r: 7, stroke: 'white', strokeWidth: 2 }}
+                                            dataKey="profit"
+                                            name="Net Kâr"
+                                            stroke="#3b82f6"
+                                            strokeWidth={3}
+                                            dot={false}
+                                            activeDot={{ r: 6, strokeWidth: 2 }}
                                         />
                                     </ComposedChart>
                                 </ResponsiveContainer>
@@ -625,14 +646,31 @@ export default function FinancialAnalysisPage() {
                                                     nameKey="name"
                                                     cx="50%"
                                                     cy="50%"
+                                                    innerRadius={70}
                                                     outerRadius={90}
-                                                    label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                                    paddingAngle={3}
+                                                    stroke="none"
                                                 >
                                                     {expenseByCategory.map((entry, index) => (
                                                         <Cell key={`cell-${index}`} fill={entry.color} />
                                                     ))}
                                                 </Pie>
-                                                <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                                                <Tooltip 
+                                                    formatter={(value: number) => [`₺${value.toLocaleString('tr-TR')}`, 'Gider']}
+                                                    contentStyle={{ borderRadius: '12px', border: '1px solid hsl(var(--border))', backgroundColor: 'hsl(var(--card))', color: 'hsl(var(--foreground))' }}
+                                                    itemStyle={{ color: 'hsl(var(--foreground))', fontWeight: '500' }}
+                                                />
+                                                <Legend 
+                                                    verticalAlign="bottom" 
+                                                    height={36} 
+                                                    iconType="circle"
+                                                    formatter={(value) => {
+                                                        const item = expenseByCategory.find(t => t.name === value)
+                                                        const total = expenseByCategory.reduce((acc, curr) => acc + curr.value, 0)
+                                                        const percent = item && total > 0 ? ((item.value / total) * 100).toFixed(1) : 0
+                                                        return <span className="text-foreground font-medium ml-1">{value} <span className="text-muted-foreground ml-1">%{percent}</span></span>
+                                                    }}
+                                                />
                                             </PieChart>
                                         </ResponsiveContainer>
                                     </div>
@@ -659,14 +697,31 @@ export default function FinancialAnalysisPage() {
                                                     nameKey="name"
                                                     cx="50%"
                                                     cy="50%"
+                                                    innerRadius={70}
                                                     outerRadius={90}
-                                                    label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                                    paddingAngle={3}
+                                                    stroke="none"
                                                 >
                                                     {revenueByType.map((entry, index) => (
                                                         <Cell key={`cell-${index}`} fill={entry.color} />
                                                     ))}
                                                 </Pie>
-                                                <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                                                <Tooltip 
+                                                    formatter={(value: number) => [`₺${value.toLocaleString('tr-TR')}`, 'Gelir']}
+                                                    contentStyle={{ borderRadius: '12px', border: '1px solid hsl(var(--border))', backgroundColor: 'hsl(var(--card))', color: 'hsl(var(--foreground))' }}
+                                                    itemStyle={{ color: 'hsl(var(--foreground))', fontWeight: '500' }}
+                                                />
+                                                <Legend 
+                                                    verticalAlign="bottom" 
+                                                    height={36} 
+                                                    iconType="circle"
+                                                    formatter={(value) => {
+                                                        const item = revenueByType.find(t => t.name === value)
+                                                        const total = revenueByType.reduce((acc, curr) => acc + curr.value, 0)
+                                                        const percent = item && total > 0 ? ((item.value / total) * 100).toFixed(1) : 0
+                                                        return <span className="text-foreground font-medium ml-1">{value} <span className="text-muted-foreground ml-1">%{percent}</span></span>
+                                                    }}
+                                                />
                                             </PieChart>
                                         </ResponsiveContainer>
                                     </div>

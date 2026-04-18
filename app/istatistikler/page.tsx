@@ -84,42 +84,53 @@ export default function StatisticsPage() {
         // status counts
         const st = pr.status || 'unknown'
         statusCounts.set(st, (statusCounts.get(st) || 0) + 1)
+        
+        // Calculate project value
+        const amountSource = pr.payment_amount || pr.budget
+        const raw = (typeof amountSource === 'number' ? String(amountSource) : String(amountSource || '')).trim()
+        let val = 0;
+        if (raw) {
+          const normalized = raw.replace(/[^0-9,.-]/g, '').replace(/\./g, '').replace(',', '.')
+          val = parseFloat(normalized)
+          if (!Number.isFinite(val)) {
+            const digits = raw.replace(/\D/g, '')
+            val = digits ? parseFloat(digits) : 0
+          }
+        }
+        
+        // project counts & revenue by client (for top clients)
+        const clientName = (pr.client || 'Bilinmeyen Müşteri').trim()
+        const agg = byClient.get(clientName) || { sum: 0, count: 0 }
+        agg.count += 1
+        // İptal edilen projeler müşterinin toplam gelirine girmesin:
+        if (pr.status !== 'cancelled') {
+           agg.sum += val
+        }
+        byClient.set(clientName, agg)
+
+        // Skip cancelled projects from revenue calculations (same as homepage)
+        if (pr.status === 'cancelled') continue
+        
         // chart sums - use payment_date if available, otherwise fall back to start_date
         const dateStr = pr.payment_date || pr.start_date || pr.created_at || null
         if (!dateStr) continue
         const d = new Date(dateStr)
         if (d < start12MonthsAgo) continue
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-        // Use payment_amount if available, otherwise fall back to budget
-        const amountSource = pr.payment_amount || pr.budget
-        const raw = (typeof amountSource === 'number' ? String(amountSource) : String(amountSource || '')).trim()
-        if (!raw) continue
-        const normalized = raw.replace(/[^0-9,.-]/g, '').replace(/\\./g, '').replace(',', '.')
-        let val = parseFloat(normalized)
-        if (!Number.isFinite(val)) {
-          const digits = raw.replace(/\D/g, '')
-          val = digits ? parseFloat(digits) : NaN
-        }
-        if (!Number.isFinite(val)) continue
+
         sums.set(key, (sums.get(key) || 0) + val)
 
         // Add to projects list for this month
         if (!projectsByMonth.has(key)) projectsByMonth.set(key, [])
         projectsByMonth.get(key)!.push({
           name: pr.name || 'İsimsiz Proje',
-          client: pr.client || 'Bilinmeyen Müşteri',
+          client: clientName,
           amount: val
         })
 
         // revenue by type
         const t = pr.project_type || 'diger'
         typeSums.set(t, (typeSums.get(t) || 0) + val)
-
-        // project counts by client (for display only)
-        const clientName = (pr.client || 'Bilinmeyen Müşteri').trim()
-        const agg = byClient.get(clientName) || { sum: 0, count: 0 }
-        agg.count += 1
-        byClient.set(clientName, agg)
       }
 
       // If no type sums after filtering, fallback to all projects (no date filter)
@@ -127,7 +138,7 @@ export default function StatisticsPage() {
         for (const pr of (projects || []) as Array<{ budget: string | number | null; project_type?: string }>) {
           const raw = (typeof pr.budget === 'number' ? String(pr.budget) : String(pr.budget || '')).trim()
           if (!raw) continue
-          const normalized = raw.replace(/[^0-9,.-]/g, '').replace(/\\./g, '').replace(',', '.')
+          const normalized = raw.replace(/[^0-9,.-]/g, '').replace(/\./g, '').replace(',', '.')
           let val = parseFloat(normalized)
           if (!Number.isFinite(val)) {
             const digits = raw.replace(/\D/g, '')
@@ -172,20 +183,16 @@ export default function StatisticsPage() {
       const typeRows = Array.from(typeSums.entries()).map(([k, v]) => ({ name: mapType(k), value: Math.round(v), color: typePalette[k] || 'hsl(var(--border))' }))
       setTypeRevenue(typeRows)
 
-      // Top 5 clients by customers.total_income
-      const buildName = (fn?: string | null, ln?: string | null) => `${fn || ''} ${ln || ''}`.trim() || 'Bilinmeyen Müşteri'
-      const custRows: { name: string; revenue: number }[] = (customers || []).map((c: any) => ({
-        name: buildName(c.first_name, c.last_name),
-        revenue: Number(c.total_income || 0),
-      }))
-      const top = custRows
-        .sort((a: { revenue: number }, b: { revenue: number }) => b.revenue - a.revenue)
-        .slice(0, 5)
-        .map((row: { name: string; revenue: number }) => ({
-          name: row.name,
-          projects: byClient.get(row.name)?.count || 0,
-          revenue: Math.round(row.revenue),
+      // Top 5 clients dynamically from projects
+      const top = Array.from(byClient.entries())
+        .map(([name, data]) => ({
+          name,
+          projects: data.count,
+          revenue: Math.round(data.sum),
         }))
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 5)
+        
       setTopClients(top)
       setLoading(false)
     }
@@ -262,13 +269,37 @@ export default function StatisticsPage() {
                   <div className="h-[300px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
-                        <Pie data={typeRevenue} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                        <Pie 
+                          data={typeRevenue} 
+                          dataKey="value" 
+                          nameKey="name" 
+                          cx="50%" 
+                          cy="50%" 
+                          innerRadius={70}
+                          outerRadius={90}
+                          paddingAngle={3}
+                          stroke="none"
+                        >
                           {typeRevenue.map((entry, idx) => (
                             <Cell key={`tp-${idx}`} fill={entry.color} />
                           ))}
                         </Pie>
-                        <Tooltip />
-                        <Legend />
+                        <Tooltip 
+                          formatter={(value: number) => [`₺${value.toLocaleString('tr-TR')}`, 'Gelir']}
+                          contentStyle={{ borderRadius: '12px', border: '1px solid hsl(var(--border))', backgroundColor: 'hsl(var(--card))', color: 'hsl(var(--foreground))' }}
+                          itemStyle={{ color: 'hsl(var(--foreground))', fontWeight: '500' }}
+                        />
+                        <Legend 
+                          verticalAlign="bottom" 
+                          height={36} 
+                          iconType="circle"
+                          formatter={(value, entry: any) => {
+                            const item = typeRevenue.find(t => t.name === value)
+                            const total = typeRevenue.reduce((acc, curr) => acc + curr.value, 0)
+                            const percent = item && total > 0 ? ((item.value / total) * 100).toFixed(1) : 0
+                            return <span className="text-foreground font-medium ml-1">{value} <span className="text-muted-foreground ml-1">%{percent}</span></span>
+                          }}
+                        />
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
