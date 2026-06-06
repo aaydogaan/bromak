@@ -80,6 +80,35 @@ export default function StatisticsPage() {
       const typeSums = new Map<string, number>()
       const byClient = new Map<string, { sum: number; count: number }>()
 
+      // Robust Turkish/standard money parser
+      const parseTurkishNumber = (value: string): number => {
+        if (!value) return 0
+        const cleaned = value.replace(/[^0-9.,]/g, '')
+        
+        if (cleaned.includes('.') && cleaned.includes(',')) {
+          const normalized = cleaned.replace(/\./g, '').replace(',', '.')
+          return parseFloat(normalized) || 0
+        }
+        
+        if (cleaned.includes(',')) {
+          const normalized = cleaned.replace(',', '.')
+          return parseFloat(normalized) || 0
+        }
+        
+        if (cleaned.includes('.')) {
+          const parts = cleaned.split('.')
+          const lastPart = parts[parts.length - 1]
+          if (lastPart.length === 3) {
+            const normalized = cleaned.replace(/\./g, '')
+            return parseFloat(normalized) || 0
+          } else {
+            return parseFloat(cleaned) || 0
+          }
+        }
+        
+        return parseFloat(cleaned) || 0
+      }
+
       for (const pr of (projects || []) as Array<{ name?: string; client?: string; budget: string | number | null; start_date: string | null; payment_date?: string | null; payment_amount?: string | number | null; created_at?: string | null; status?: string; project_type?: string }>) {
         // status counts
         const st = pr.status || 'unknown'
@@ -88,15 +117,7 @@ export default function StatisticsPage() {
         // Calculate project value
         const amountSource = pr.payment_amount || pr.budget
         const raw = (typeof amountSource === 'number' ? String(amountSource) : String(amountSource || '')).trim()
-        let val = 0;
-        if (raw) {
-          const normalized = raw.replace(/[^0-9,.-]/g, '').replace(/\./g, '').replace(',', '.')
-          val = parseFloat(normalized)
-          if (!Number.isFinite(val)) {
-            const digits = raw.replace(/\D/g, '')
-            val = digits ? parseFloat(digits) : 0
-          }
-        }
+        const val = parseTurkishNumber(raw)
         
         // project counts & revenue by client (for top clients)
         const clientName = (pr.client || 'Bilinmeyen Müşteri').trim()
@@ -138,12 +159,7 @@ export default function StatisticsPage() {
         for (const pr of (projects || []) as Array<{ budget: string | number | null; project_type?: string }>) {
           const raw = (typeof pr.budget === 'number' ? String(pr.budget) : String(pr.budget || '')).trim()
           if (!raw) continue
-          const normalized = raw.replace(/[^0-9,.-]/g, '').replace(/\./g, '').replace(',', '.')
-          let val = parseFloat(normalized)
-          if (!Number.isFinite(val)) {
-            const digits = raw.replace(/\D/g, '')
-            val = digits ? parseFloat(digits) : NaN
-          }
+          const val = parseTurkishNumber(raw)
           if (!Number.isFinite(val)) continue
           const t = pr.project_type || 'diger'
           typeSums.set(t, (typeSums.get(t) || 0) + val)

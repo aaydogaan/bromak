@@ -22,13 +22,41 @@ export async function GET(request: NextRequest) {
             .select('budget, payment_amount, payment_date, start_date')
             .neq('status', 'cancelled')
 
+        const parseTurkishNumber = (value: string): number => {
+            if (!value) return 0
+            const cleaned = value.replace(/[^0-9.,]/g, '')
+            
+            if (cleaned.includes('.') && cleaned.includes(',')) {
+                const normalized = cleaned.replace(/\./g, '').replace(',', '.')
+                return parseFloat(normalized) || 0
+            }
+            
+            if (cleaned.includes(',')) {
+                const normalized = cleaned.replace(',', '.')
+                return parseFloat(normalized) || 0
+            }
+            
+            if (cleaned.includes('.')) {
+                const parts = cleaned.split('.')
+                const lastPart = parts[parts.length - 1]
+                if (lastPart.length === 3) {
+                    const normalized = cleaned.replace(/\./g, '')
+                    return parseFloat(normalized) || 0
+                } else {
+                    return parseFloat(cleaned) || 0
+                }
+            }
+            
+            return parseFloat(cleaned) || 0
+        }
+
         const totalRevenue = (projectsData || []).reduce((sum, project) => {
             const dateStr = project.payment_date || project.start_date
             if (!dateStr) return sum
 
             const projectDate = new Date(dateStr)
             if (projectDate >= monthStart && projectDate <= monthEnd) {
-                const amount = parseFloat(String(project.payment_amount || project.budget || '0').replace(/[^0-9.-]/g, ''))
+                const amount = parseTurkishNumber(String(project.payment_amount || project.budget || '0'))
                 return sum + amount
             }
             return sum

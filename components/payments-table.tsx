@@ -23,11 +23,30 @@ interface PaymentRow {
 function toNumber(val: string): number {
   const raw = (val || '').trim()
   if (!raw) return 0
-  const normalized = raw.replace(/[^0-9,.-]/g, '').replace(/\./g, '').replace(',', '.')
-  const n = parseFloat(normalized)
-  if (Number.isFinite(n)) return n
-  const digits = raw.replace(/\D/g, '')
-  return digits ? parseFloat(digits) : 0
+  const cleaned = raw.replace(/[^0-9.,]/g, '')
+  
+  if (cleaned.includes('.') && cleaned.includes(',')) {
+    const normalized = cleaned.replace(/\./g, '').replace(',', '.')
+    return parseFloat(normalized) || 0
+  }
+  
+  if (cleaned.includes(',')) {
+    const normalized = cleaned.replace(',', '.')
+    return parseFloat(normalized) || 0
+  }
+  
+  if (cleaned.includes('.')) {
+    const parts = cleaned.split('.')
+    const lastPart = parts[parts.length - 1]
+    if (lastPart.length === 3) {
+      const normalized = cleaned.replace(/\./g, '')
+      return parseFloat(normalized) || 0
+    } else {
+      return parseFloat(cleaned) || 0
+    }
+  }
+  
+  return parseFloat(cleaned) || 0
 }
 
 const tl = (n: number) => `₺${(n || 0).toLocaleString('tr-TR')}`

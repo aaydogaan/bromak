@@ -45,6 +45,34 @@ interface Client {
   notes?: string
 }
 
+const parseTurkishNumber = (value: string): number => {
+  if (!value) return 0
+  const cleaned = value.replace(/[^0-9.,]/g, '')
+  
+  if (cleaned.includes('.') && cleaned.includes(',')) {
+    const normalized = cleaned.replace(/\./g, '').replace(',', '.')
+    return parseFloat(normalized) || 0
+  }
+  
+  if (cleaned.includes(',')) {
+    const normalized = cleaned.replace(',', '.')
+    return parseFloat(normalized) || 0
+  }
+  
+  if (cleaned.includes('.')) {
+    const parts = cleaned.split('.')
+    const lastPart = parts[parts.length - 1]
+    if (lastPart.length === 3) {
+      const normalized = cleaned.replace(/\./g, '')
+      return parseFloat(normalized) || 0
+    } else {
+      return parseFloat(cleaned) || 0
+    }
+  }
+  
+  return parseFloat(cleaned) || 0
+}
+
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([])
 
@@ -73,8 +101,7 @@ export default function ClientsPage() {
           const key = (p.client || '').trim().toLowerCase()
           if (!key) continue
           const rawAmount = String(p.payment_amount || p.budget || '0');
-          const normalized = rawAmount.replace(/[^0-9,.-]/g, '').replace(/\./g, '').replace(',', '.');
-          const amount = parseFloat(normalized) || 0;
+          const amount = parseTurkishNumber(rawAmount)
           revenueMap[key] = (revenueMap[key] || 0) + amount
           projectCountMap[key] = (projectCountMap[key] || 0) + 1
           if (p.status === 'in_progress' || p.status === 'planning') {
@@ -139,10 +166,8 @@ export default function ClientsPage() {
     // TL formatlı metinden sayıyı çıkar
     const incomeNumber = (() => {
       try {
-        const raw = String(client.totalRevenue || '').replace(/[^0-9,.-]/g, '')
-        const normalized = raw.replace(/\./g, '').replace(',', '.')
-        const num = parseFloat(normalized)
-        return Number.isFinite(num) ? String(num) : ''
+        const num = parseTurkishNumber(client.totalRevenue || '')
+        return num > 0 ? String(num) : ''
       } catch {
         return ''
       }

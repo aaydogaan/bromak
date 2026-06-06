@@ -155,6 +155,35 @@ export default function FinancialAnalysisPage() {
     }
 
     const processFinancialData = (chartProjects: any[], chartExpenses: any[], periodProjects: any[], periodExpenses: any[], chartStartDate: Date, chartEndDate: Date) => {
+        // Robust Turkish/standard money parser
+        const parseTurkishNumber = (value: string): number => {
+            if (!value) return 0
+            const cleaned = value.replace(/[^0-9.,]/g, '')
+            
+            if (cleaned.includes('.') && cleaned.includes(',')) {
+                const normalized = cleaned.replace(/\./g, '').replace(',', '.')
+                return parseFloat(normalized) || 0
+            }
+            
+            if (cleaned.includes(',')) {
+                const normalized = cleaned.replace(',', '.')
+                return parseFloat(normalized) || 0
+            }
+            
+            if (cleaned.includes('.')) {
+                const parts = cleaned.split('.')
+                const lastPart = parts[parts.length - 1]
+                if (lastPart.length === 3) {
+                    const normalized = cleaned.replace(/\./g, '')
+                    return parseFloat(normalized) || 0
+                } else {
+                    return parseFloat(cleaned) || 0
+                }
+            }
+            
+            return parseFloat(cleaned) || 0
+        }
+
         // Generate months - always show last 3 months for chart
         const months: { [key: string]: MonthlyData } = {}
 
@@ -194,15 +223,7 @@ export default function FinancialAnalysisPage() {
 
             const amountSource = project.payment_amount || project.budget
             const raw = String(amountSource || '').trim()
-            let amount = 0;
-            if (raw) {
-                const normalized = raw.replace(/[^0-9,.-]/g, '').replace(/\./g, '').replace(',', '.')
-                amount = parseFloat(normalized)
-                if (!Number.isFinite(amount)) {
-                    const digits = raw.replace(/\D/g, '')
-                    amount = digits ? parseFloat(digits) : 0
-                }
-            }
+            const amount = parseTurkishNumber(raw)
 
             if (months[key]) {
                 months[key].revenue += amount
@@ -254,15 +275,7 @@ export default function FinancialAnalysisPage() {
         for (const project of periodProjects) {
             const amountSource = project.payment_amount || project.budget
             const raw = String(amountSource || '').trim()
-            let amount = 0;
-            if (raw) {
-                const normalized = raw.replace(/[^0-9,.-]/g, '').replace(/\./g, '').replace(',', '.')
-                amount = parseFloat(normalized)
-                if (!Number.isFinite(amount)) {
-                    const digits = raw.replace(/\D/g, '')
-                    amount = digits ? parseFloat(digits) : 0
-                }
-            }
+            const amount = parseTurkishNumber(raw)
             totalRev += amount
         }
 
