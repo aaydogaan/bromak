@@ -58,6 +58,14 @@ export function EditProjectModal({ project, open, onOpenChange, onSuccess }: Edi
   const [paymentDate, setPaymentDate] = useState<Date | undefined>(project?.payment_date ? new Date(project.payment_date) : undefined)
   const [loading, setLoading] = useState(false)
 
+  // DB'deki ham sayıyı (örn. "25077.45") Türkçe formatına çevir: "25.077,45"
+  const formatTurkishNumber = (value: string | undefined | null): string => {
+    if (!value) return ''
+    const num = parseFloat(value)
+    if (isNaN(num)) return value
+    return num.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
+  }
+
   // Proje değiştiğinde form verilerini güncelle
   useEffect(() => {
     if (project) {
@@ -67,19 +75,63 @@ export function EditProjectModal({ project, open, onOpenChange, onSuccess }: Edi
         description: project.description || '',
         status: project.status,
         project_type: (project as any).project_type || 'web_site',
-        budget: project.budget,
+        budget: formatTurkishNumber(project.budget),
         location: project.location || '',
         start_date: project.start_date,
         deadline: project.deadline,
         image_url: project.image_url || '',
         payment_date: project.payment_date || '',
-        payment_amount: project.payment_amount || ''
+        payment_amount: formatTurkishNumber(project.payment_amount)
       })
       setStartDate(project.start_date ? new Date(project.start_date) : undefined)
       setEndDate(project.deadline ? new Date(project.deadline) : undefined)
       setPaymentDate(project.payment_date ? new Date(project.payment_date) : undefined)
     }
   }, [project])
+
+  // Türkçe para formatını parse et: "25.077,45" → 25077.45
+  const parseTurkishNumber = (value: string): number => {
+    if (!value) return 0
+    const cleaned = value.replace(/[^0-9.,]/g, '')
+    
+    // Hem nokta hem virgül varsa (örn: 25.077,45)
+    if (cleaned.includes('.') && cleaned.includes(',')) {
+      const normalized = cleaned.replace(/\./g, '').replace(',', '.')
+      return parseFloat(normalized) || 0
+    }
+    
+    // Sadece virgül varsa (örn: 25077,45)
+    if (cleaned.includes(',')) {
+      const normalized = cleaned.replace(',', '.')
+      return parseFloat(normalized) || 0
+    }
+    
+    // Sadece nokta varsa (örn: 25077.45 veya 17.500)
+    if (cleaned.includes('.')) {
+      const parts = cleaned.split('.')
+      const lastPart = parts[parts.length - 1]
+      // Eğer son parça tam 3 haneli ise, bunu binlik ayraç sayıp noktaları silelim
+      if (lastPart.length === 3) {
+        const normalized = cleaned.replace(/\./g, '')
+        return parseFloat(normalized) || 0
+      } else {
+        // Ondalık ayraç sayıp direkt float parse edelim
+        return parseFloat(cleaned) || 0
+      }
+    }
+    
+    return parseFloat(cleaned) || 0
+  }
+
+  // Para alanları için sadece geçerli karakterlere izin ver
+  const handleMoneyInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    const filtered = value.replace(/[^0-9.,]/g, '')
+    setFormData(prev => ({
+      ...prev,
+      [name]: filtered
+    }))
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -103,14 +155,21 @@ export function EditProjectModal({ project, open, onOpenChange, onSuccess }: Edi
     setLoading(true)
 
     try {
+      // Para değerlerini Türkçe formattan parse et
+      const budgetNum = parseTurkishNumber(formData.budget)
+      const paymentNum = formData.payment_amount
+        ? parseTurkishNumber(formData.payment_amount)
+        : budgetNum
+
       const { error } = await supabase
         .from('projects')
         .update({
           ...formData,
+          budget: String(budgetNum),
           start_date: startDate?.toISOString(),
           deadline: endDate?.toISOString(),
           payment_date: paymentDate?.toISOString(),
-          payment_amount: formData.payment_amount
+          payment_amount: String(paymentNum)
         })
         .eq('id', project.id)
 
@@ -226,11 +285,14 @@ export function EditProjectModal({ project, open, onOpenChange, onSuccess }: Edi
                 <Input
                   id="budget"
                   name="budget"
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
                   value={formData.budget}
-                  onChange={handleChange}
+                  onChange={handleMoneyInput}
+                  placeholder="Örn: 25.077,45"
                   required
                 />
+                <p className="text-xs text-muted-foreground">Binlik ayraç için nokta, ondalık için virgül</p>
               </div>
 
               <div className="space-y-2">
@@ -328,10 +390,11 @@ export function EditProjectModal({ project, open, onOpenChange, onSuccess }: Edi
                   <Input
                     id="payment_amount"
                     name="payment_amount"
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
                     value={formData.payment_amount}
-                    onChange={handleChange}
-                    placeholder="Alınan tutar"
+                    onChange={handleMoneyInput}
+                    placeholder="Örn: 2.577,45"
                   />
                   <p className="text-xs text-muted-foreground">Boş bırakılırsa bütçe kullanılır</p>
                 </div>

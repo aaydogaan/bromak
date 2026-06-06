@@ -140,13 +140,33 @@ export default function ProjectsPage() {
   const parseBudget = (val?: string): number => {
     const raw = (val || '').trim()
     if (!raw) return 0
-    const normalized = raw.replace(/[^0-9,.-]/g, '').replace(/\./g, '').replace(',', '.')
-    let num = parseFloat(normalized)
-    if (!Number.isFinite(num)) {
-      const digits = raw.replace(/\D/g, '')
-      num = digits ? parseFloat(digits) : 0
+    const cleaned = raw.replace(/[^0-9.,]/g, '')
+    
+    // Hem nokta hem virgül varsa (örn: 25.077,45)
+    if (cleaned.includes('.') && cleaned.includes(',')) {
+      const normalized = cleaned.replace(/\./g, '').replace(',', '.')
+      return parseFloat(normalized) || 0
     }
-    return Number.isFinite(num) ? num : 0
+    
+    // Sadece virgül varsa (örn: 25077,45)
+    if (cleaned.includes(',')) {
+      const normalized = cleaned.replace(',', '.')
+      return parseFloat(normalized) || 0
+    }
+    
+    // Sadece nokta varsa (örn: 25077.45 veya 17.500)
+    if (cleaned.includes('.')) {
+      const parts = cleaned.split('.')
+      const lastPart = parts[parts.length - 1]
+      if (lastPart.length === 3) {
+        const normalized = cleaned.replace(/\./g, '')
+        return parseFloat(normalized) || 0
+      } else {
+        return parseFloat(cleaned) || 0
+      }
+    }
+    
+    return parseFloat(cleaned) || 0
   }
 
   // Sorted list derived from filteredProjects

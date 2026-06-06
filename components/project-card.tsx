@@ -13,8 +13,16 @@ const formatDate = (dateString: string) => {
   try {
     return format(parseISO(dateString), 'd MMMM yyyy', { locale: tr })
   } catch (error) {
-    return dateString // Eğer tarih formatı geçersizse orijinal değeri döndür
+    return dateString
   }
+}
+
+// Para birimi formatlama: "25077.45" → "25.077,45"
+const formatMoney = (value: string | undefined | null): string => {
+  if (!value) return '—'
+  const num = parseFloat(value)
+  if (isNaN(num)) return value
+  return num.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
 }
 
 interface Project {
@@ -106,7 +114,7 @@ export function ProjectCard({
           </div>
           <div className="flex items-center gap-2">
             <Banknote className="h-4 w-4 flex-shrink-0 text-amber-500" />
-            <span className="font-medium text-foreground">{project.budget} ₺</span>
+            <span className="font-medium text-foreground">{formatMoney(project.budget)} ₺</span>
           </div>
         </div>
 

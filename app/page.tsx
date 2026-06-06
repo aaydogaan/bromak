@@ -40,6 +40,35 @@ export default function DashboardPage() {
         const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
         const start12MonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1)
 
+        // Robust Turkish/standard money parser
+        const parseTurkishNumber = (value: string): number => {
+          if (!value) return 0
+          const cleaned = value.replace(/[^0-9.,]/g, '')
+          
+          if (cleaned.includes('.') && cleaned.includes(',')) {
+            const normalized = cleaned.replace(/\./g, '').replace(',', '.')
+            return parseFloat(normalized) || 0
+          }
+          
+          if (cleaned.includes(',')) {
+            const normalized = cleaned.replace(',', '.')
+            return parseFloat(normalized) || 0
+          }
+          
+          if (cleaned.includes('.')) {
+            const parts = cleaned.split('.')
+            const lastPart = parts[parts.length - 1]
+            if (lastPart.length === 3) {
+              const normalized = cleaned.replace(/\./g, '')
+              return parseFloat(normalized) || 0
+            } else {
+              return parseFloat(cleaned) || 0
+            }
+          }
+          
+          return parseFloat(cleaned) || 0
+        }
+
         // Customers count
         const customersPromise = supabase
           .from('customers')
@@ -150,8 +179,7 @@ export default function DashboardPage() {
           const amountSource = pr.payment_amount || pr.budget
           const raw = String(amountSource ?? '').trim()
           if (!raw) continue
-          const normalized = raw.replace(/[^0-9,.-]/g, '').replace(/\./g, '').replace(',', '.')
-          const amt = parseFloat(normalized)
+          const amt = parseTurkishNumber(raw)
           if (!Number.isFinite(amt)) continue
 
           // Add to sums
@@ -180,8 +208,7 @@ export default function DashboardPage() {
           const amountSource = pr.payment_amount || pr.budget
           const raw = String(amountSource ?? '').trim()
           if (!raw) return acc
-          const normalized = raw.replace(/[^0-9,.-]/g, '').replace(/\./g, '').replace(',', '.')
-          const val = parseFloat(normalized)
+          const val = parseTurkishNumber(raw)
           if (!Number.isFinite(val)) return acc
           return acc + val
         }, 0)
@@ -192,8 +219,7 @@ export default function DashboardPage() {
           const amountSource = pr.payment_amount || pr.budget
           const raw = String(amountSource ?? '').trim()
           if (!raw) return acc
-          const normalized = raw.replace(/[^0-9,.-]/g, '').replace(/\./g, '').replace(',', '.')
-          const val = parseFloat(normalized)
+          const val = parseTurkishNumber(raw)
           if (!Number.isFinite(val)) return acc
           return acc + val
         }, 0)

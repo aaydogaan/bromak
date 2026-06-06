@@ -65,19 +65,25 @@ export function NewProjectForm() {
         throw new Error('Lütfen tüm zorunlu alanları doldurunuz.')
       }
 
+      // Para değerlerini Türkçe formattan parse et
+      const budgetNum = parseTurkishNumber(formData.budget)
+      const paymentNum = formData.payment_amount
+        ? parseTurkishNumber(formData.payment_amount)
+        : budgetNum
+
       const projectData = {
         name: formData.name,
         client: formData.client,
         description: formData.description,
         status: formData.status,
         project_type: formData.project_type,
-        budget: formData.budget || '0', // Boş bırakılırsa 0 olarak ayarla
+        budget: String(budgetNum),
         location: formData.location || '',
         start_date: startDate.toISOString(),
         deadline: endDate?.toISOString() || null,
         image_url: formData.image_url || null,
         payment_date: paymentDate?.toISOString() || null,
-        payment_amount: formData.payment_amount || formData.budget,
+        payment_amount: String(paymentNum),
         created_at: new Date().toISOString()
       }
 
@@ -116,7 +122,7 @@ export function NewProjectForm() {
             name: formData.name,
             customer_name: formData.client,
             status: statusMap[formData.status] || formData.status,
-            total_amount: parseFloat(formData.budget) || 0,
+            total_amount: parseTurkishNumber(formData.budget),
           }),
         })
       } catch (emailError) {
@@ -132,6 +138,51 @@ export function NewProjectForm() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Türkçe para formatını parse et: "25.077,45" → 25077.45
+  const parseTurkishNumber = (value: string): number => {
+    if (!value) return 0
+    const cleaned = value.replace(/[^0-9.,]/g, '')
+    
+    // Hem nokta hem virgül varsa (örn: 25.077,45)
+    if (cleaned.includes('.') && cleaned.includes(',')) {
+      const normalized = cleaned.replace(/\./g, '').replace(',', '.')
+      return parseFloat(normalized) || 0
+    }
+    
+    // Sadece virgül varsa (örn: 25077,45)
+    if (cleaned.includes(',')) {
+      const normalized = cleaned.replace(',', '.')
+      return parseFloat(normalized) || 0
+    }
+    
+    // Sadece nokta varsa (örn: 25077.45 veya 17.500)
+    if (cleaned.includes('.')) {
+      const parts = cleaned.split('.')
+      const lastPart = parts[parts.length - 1]
+      // Eğer son parça tam 3 haneli ise, bunu binlik ayraç sayıp noktaları silelim
+      if (lastPart.length === 3) {
+        const normalized = cleaned.replace(/\./g, '')
+        return parseFloat(normalized) || 0
+      } else {
+        // Ondalık ayraç sayıp direkt float parse edelim
+        return parseFloat(cleaned) || 0
+      }
+    }
+    
+    return parseFloat(cleaned) || 0
+  }
+
+  // Para alanları için sadece geçerli karakterlere izin ver
+  const handleMoneyInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    // Sadece rakam, nokta, virgül karakterlerine izin ver
+    const filtered = value.replace(/[^0-9.,]/g, '')
+    setFormData(prev => ({
+      ...prev,
+      [name]: filtered
+    }))
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -287,12 +338,14 @@ export function NewProjectForm() {
               <Input
                 id="budget"
                 name="budget"
-                type="number"
+                type="text"
+                inputMode="decimal"
                 value={formData.budget}
-                onChange={handleChange}
-                placeholder="45000"
+                onChange={handleMoneyInput}
+                placeholder="Örn: 25.077,45"
                 required
               />
+              <p className="text-xs text-muted-foreground">Binlik ayraç için nokta, ondalık için virgül kullanın</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="image_url">Resim URL (Opsiyonel)</Label>
@@ -383,10 +436,11 @@ export function NewProjectForm() {
               <Input
                 id="payment_amount"
                 name="payment_amount"
-                type="number"
+                type="text"
+                inputMode="decimal"
                 value={formData.payment_amount}
-                onChange={handleChange}
-                placeholder="Alınan tutar"
+                onChange={handleMoneyInput}
+                placeholder="Örn: 2.577,45"
               />
               <p className="text-xs text-muted-foreground">Boş bırakılırsa bütçe kullanılır</p>
             </div>
