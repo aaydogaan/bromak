@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bromak Tahsilat Hesaplama</title>
+<style>
+:root{
+  --bg:#f4f6f8;
+  --card:#ffffff;
+  --text:#171717;
+  --muted:#6b7280;
+  --line:#e5e7eb;
+  --soft-green:#dcfce7;
+  --green:#166534;
+  --dark:#111827;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  padding:28px;
+  font-family:Inter,Arial,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
+.wrap{max-width:1180px;margin:0 auto}
+.header{
+  display:flex;
+  justify-content:space-between;
+  gap:16px;
+  align-items:flex-end;
+  margin-bottom:18px;
+}
+h1{margin:0;font-size:28px}
+p{margin:7px 0 0;color:var(--muted)}
+.card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:22px;
+  padding:22px;
+  box-shadow:0 10px 35px rgba(0,0,0,.05);
+}
+.inputs{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:18px;
+  margin-bottom:18px;
+}
+label{
+  display:block;
+  font-weight:700;
+  font-size:14px;
+  margin-bottom:8px;
+}
+input{
+  width:100%;
+  border:1px solid #d1d5db;
+  border-radius:14px;
+  padding:15px 16px;
+  font-size:18px;
+  outline:none;
+  background:#fff;
+}
+input:focus{border-color:#111827;box-shadow:0 0 0 3px rgba(17,24,39,.08)}
+.summary{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:14px;
+  margin-bottom:18px;
+}
+.mini{
+  background:#fafafa;
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:16px;
+}
+.mini span{display:block;color:var(--muted);font-size:13px;margin-bottom:8px}
+.mini b{font-size:20px}
+.tableWrap{
+  overflow:auto;
+  border:1px solid var(--line);
+  border-radius:18px;
+}
+table{
+  width:100%;
+  border-collapse:collapse;
+  min-width:980px;
+  background:#fff;
+}
+th,td{
+  padding:15px 14px;
+  border-bottom:1px solid var(--line);
+  text-align:right;
+  white-space:nowrap;
+}
+th:first-child,td:first-child{text-align:left}
+th{
+  background:#f9fafb;
+  color:#374151;
+  font-size:13px;
+}
+td{font-size:15px}
+.method{font-weight:800;color:var(--dark)}
+.greenBox{
+  background:rgba(34,197,94,.16);
+  color:var(--green);
+  border:1px solid rgba(22,101,52,.18);
+  border-radius:14px;
+  padding:10px 12px;
+  font-weight:800;
+  display:inline-block;
+  min-width:135px;
+}
+.note{
+  margin-top:14px;
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.45;
+}
+@media(max-width:850px){
+  body{padding:14px}
+  .header{display:block}
+  .inputs,.summary{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <div>
+      <h1>Bromak Tahsilat Hesaplama</h1>
+      <p>Hizmet bedelini KDV hariç gir. Nakit tutarı değiştikçe tüm ödeme seçenekleri otomatik güncellenir.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="inputs">
+      <div>
+        <label>KDV Hariç Hizmet Bedeli</label>
+        <input id="base" type="number" value="30000" min="0" step="100">
+      </div>
+      <div>
+        <label>Nakit / Havale Ödeme Tutarı</label>
+        <input id="cash" type="number" value="10000" min="0" step="100">
+      </div>
+    </div>
+
+    <div class="summary">
+      <div class="mini"><span>KDV %20</span><b id="vatText"></b></div>
+      <div class="mini"><span>KDV Dahil Ana Tutar</span><b id="totalText"></b></div>
+      <div class="mini"><span>Nakit / Havale</span><b id="cashText"></b></div>
+      <div class="mini"><span>Kartla Kalan Net Tutar</span><b id="remainText"></b></div>
+    </div>
+
+    <div class="tableWrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Ödeme Seçeneği</th>
+            <th>Komisyon</th>
+            <th>Nakde Çevirme</th>
+            <th>Tamamı Kartla Ödenirse</th>
+            <th>Nakit + Kart Toplamı</th>
+            <th>Karttan Çekilecek</th>
+            <th>Nakit Ödeme ile Fiyat Farkı</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="note">
+      Formül: Karttan çekilecek tutar = Kartta kalan tutar × (1 + ödeme komisyonu + %2,69). 
+      Fiyat farkı, müşterinin tamamını kartla ödemesi yerine bir kısmını nakit/havale vermesiyle toplam ödemede oluşan düşüşü gösterir.
+    </div>
+  </div>
+</div>
+
+<script>
+const vatRate = 0.20;
+const cashoutRate = 0.0269;
+
+const methods = [
+  ["QR", 0],
+  ["Mail Order", 0.0069],
+  ["Tek Çekim", 0],
+  ["2 Taksit", 0.0419],
+  ["3 Taksit", 0.0599],
+  ["4 Taksit", 0.0799],
+  ["6 Taksit", 0.1169],
+  ["9 Taksit", 0.1719],
+  ["12 Taksit", 0.2269]
+];
+
+const $ = id => document.getElementById(id);
+
+function money(n){
+  return new Intl.NumberFormat("tr-TR", {
+    style:"currency",
+    currency:"TRY",
+    minimumFractionDigits:2,
+    maximumFractionDigits:2
+  }).format(isFinite(n) ? n : 0);
+}
+
+function pct(n){
+  return (n*100).toLocaleString("tr-TR", {
+    minimumFractionDigits:2,
+    maximumFractionDigits:2
+  }) + "%";
+}
+
+function render(){
+  const base = Math.max(0, Number($("base").value) || 0);
+  const vat = base * vatRate;
+  const total = base + vat;
+  const cash = Math.min(Math.max(0, Number($("cash").value) || 0), total);
+  const remain = Math.max(0, total - cash);
+
+  $("vatText").textContent = money(vat);
+  $("totalText").textContent = money(total);
+  $("cashText").textContent = money(cash);
+  $("remainText").textContent = money(remain);
+
+  $("tbody").innerHTML = methods.map(([name, rate]) => {
+    const totalRate = rate + cashoutRate;
+
+    const allCardTotal = total * (1 + totalRate);
+    const cardCharge = remain * (1 + totalRate);
+    const cashPlusCardTotal = cash + cardCharge;
+    const difference = allCardTotal - cashPlusCardTotal;
+
+    return `
+      <tr>
+        <td class="method">${name}</td>
+        <td>${pct(rate)}</td>
+        <td>${pct(cashoutRate)}</td>
+        <td><b>${money(allCardTotal)}</b></td>
+        <td><b>${money(cashPlusCardTotal)}</b></td>
+        <td>${money(cardCharge)}</td>
+        <td><span class="greenBox">${money(difference)}</span></td>
+      </tr>
+    `;
+  }).join("");
+}
+
+$("base").addEventListener("input", render);
+$("cash").addEventListener("input", render);
+render();
+</script>
+</body>
+</html>

@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/client"
 
 
 import { AtusWidget } from "@/components/atus-widget"
+import { TahsilatHesaplamaWidget } from "@/components/tahsilat-hesaplama-widget"
 
 type ChartRow = {
   month: string
@@ -486,6 +487,10 @@ export default function DashboardPage() {
             <div className="space-y-6">
               <RecentActivity />
             </div>
+          </div>
+
+          <div className="mt-6">
+            <TahsilatHesaplamaWidget />
           </div>
 
           {/* Motive Edici Söz */}
