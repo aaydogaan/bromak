@@ -6,7 +6,7 @@ const STOPS = [
         id: '1658',
         name: '🏠 Eşrefoğlu (Ev)',
         keywords: ['eşref', 'ev', 'recep sıkıldı', '🏠 ev'],
-        defaultLines: ['52', '56'],
+        defaultLines: ['52', '56', '48', '67', '109'],
         direction: 'YAZIR',
         callbackKey: 'ev'
     },
@@ -14,18 +14,10 @@ const STOPS = [
         id: '1635',
         name: '🏢 Adaklı (Ofis)',
         keywords: ['adaklı', 'ofis', '🏢 ofis'],
-        defaultLines: ['52', '56'],
+        defaultLines: ['52', '56', '48', '67'],
         direction: ['ÇINARALTI', 'KÜLTÜRPARK'],
         callbackKey: 'ofis'
-    },
-    {
-        id: '1492',
-        name: '🏢 Kaşgarlı Mahmut (Ofis2)',
-        keywords: ['kaşgarlı', 'mahmut'],
-        defaultLines: ['52', '56', '97'],
-        direction: ['ÇINARALTI', 'KÜLTÜRPARK', 'MERAM'],
-        callbackKey: 'ofis2'
-    },
+    }
 ];
 
 // ─── OTOBÜs SORGU MOTORU ─────────────────────────────────────────────────────
@@ -109,7 +101,7 @@ export async function POST(request: Request) {
         }
 
         // --- HANGİ DURAĞA SORGU? ---
-        const reqLines = ['52', '56', '97'].filter(line => text.includes(line));
+        const reqLines = ['52', '56', '97', '48', '67', '109'].filter(line => text.includes(line));
         const reqStops = STOPS.filter(stop => stop.keywords.some(k => text.includes(k)));
 
         // Hiçbir anahtar kelime yoksa sessiz kal
@@ -156,7 +148,8 @@ async function sendMenu(token: string, chatId: number) {
     const keyboard = {
         keyboard: [
             [{ text: '🏠 Ev' }, { text: '🏢 Ofis' }],
-            [{ text: '52' }, { text: '56' }, { text: '97' }],
+            [{ text: '48' }, { text: '52' }, { text: '56' }],
+            [{ text: '67' }, { text: '97' }, { text: '109' }],
         ],
         resize_keyboard: true,
         one_time_keyboard: false,

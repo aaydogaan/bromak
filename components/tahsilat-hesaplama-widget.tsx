@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Calculator } from "lucide-react"
+import { Calculator, Maximize2 } from "lucide-react"
+import { Dialog, DialogContent } from "@/components/ui/dialog"
 
 const VAT_RATE = 0.20
 const CASHOUT_RATE = 0.0269
@@ -41,6 +42,7 @@ function pct(n: number) {
 export function TahsilatHesaplamaWidget() {
   const [baseInput, setBaseInput] = useState<string>("")
   const [cashInput, setCashInput] = useState<string>("")
+  const [isFullscreen, setIsFullscreen] = useState(false)
 
   const {
     vat,
@@ -80,23 +82,36 @@ export function TahsilatHesaplamaWidget() {
     }
   }, [baseInput, cashInput])
 
-  return (
-    <Card className="glass-effect">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Calculator className="h-5 w-5" />
-          Tahsilat Hesaplama
-        </CardTitle>
-        <CardDescription>
-          Hizmet bedelini KDV hariç girin. Nakit tutarı değiştikçe tüm ödeme seçenekleri otomatik güncellenir.
-        </CardDescription>
+  const renderContent = (isModal: boolean) => (
+    <>
+      <CardHeader className={isModal ? "px-6 pt-6 pb-2" : ""}>
+        <div className="flex justify-between items-start gap-4">
+          <div className="space-y-1.5">
+            <CardTitle className="flex items-center gap-2">
+              <Calculator className="h-5 w-5" />
+              Tahsilat Hesaplama
+            </CardTitle>
+            <CardDescription>
+              Hizmet bedelini KDV hariç girin. Nakit tutarı değiştikçe tüm ödeme seçenekleri otomatik güncellenir.
+            </CardDescription>
+          </div>
+          {!isModal && (
+            <button 
+              onClick={() => setIsFullscreen(true)} 
+              className="p-2 -mr-2 -mt-2 hover:bg-muted/80 rounded-md transition-colors text-muted-foreground hover:text-foreground shrink-0"
+              title="Tam Ekran Büyüt"
+            >
+              <Maximize2 className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className={`space-y-6 ${isModal ? 'px-6 pb-6' : ''}`}>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="base">KDV Hariç Hizmet Bedeli (₺)</Label>
+            <Label htmlFor={isModal ? "base-modal" : "base"}>KDV Hariç Hizmet Bedeli (₺)</Label>
             <Input
-              id="base"
+              id={isModal ? "base-modal" : "base"}
               type="number"
               min="0"
               step="100"
@@ -105,9 +120,9 @@ export function TahsilatHesaplamaWidget() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="cash">Nakit / Havale Ödeme Tutarı (₺)</Label>
+            <Label htmlFor={isModal ? "cash-modal" : "cash"}>Nakit / Havale Ödeme Tutarı (₺)</Label>
             <Input
-              id="cash"
+              id={isModal ? "cash-modal" : "cash"}
               type="number"
               min="0"
               step="100"
@@ -178,6 +193,20 @@ export function TahsilatHesaplamaWidget() {
           Fiyat farkı, müşterinin tamamını kartla ödemesi yerine bir kısmını nakit/havale vermesiyle toplam ödemede oluşan düşüşü gösterir.
         </div>
       </CardContent>
-    </Card>
+    </>
+  )
+
+  return (
+    <>
+      <Card className="glass-effect">
+        {renderContent(false)}
+      </Card>
+
+      <Dialog open={isFullscreen} onOpenChange={setIsFullscreen}>
+        <DialogContent className="max-w-[95vw] lg:max-w-6xl w-full max-h-[95vh] overflow-y-auto p-0 gap-0 border bg-background shadow-2xl sm:rounded-xl">
+          {renderContent(true)}
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
