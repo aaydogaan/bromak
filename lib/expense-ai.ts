@@ -75,11 +75,12 @@ export async function extractExpenseDataWithGemini(
 ): Promise<ExpenseExtractionResult | null> {
   const geminiApiKey = process.env.GEMINI_API_KEY;
 
-  if (geminiApiKey && geminiApiKey.startsWith("AIzaSy")) {
+  if (geminiApiKey) {
     try {
       const genAI = new GoogleGenerativeAI(geminiApiKey);
+      // Güncel Google AI Studio model ismi: gemini-flash-latest veya gemini-3.6-flash
       const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash",
+        model: "gemini-flash-latest",
         generationConfig: { responseMimeType: "application/json" }
       });
 
@@ -122,11 +123,9 @@ export async function extractExpenseDataWithGemini(
     } catch (error) {
       console.error("Gemini OCR/AI Error:", error);
     }
-  } else {
-    console.warn("Geçerli bir Gemini API Key bulunamadı veya anahtar formatı hatalı.");
   }
 
-  // Gemini başarısız olduysa veya geçerli anahtar yoksa, Groq ile metin analizi yap
+  // Gemini başarısız olduysa veya anahtar yoksa, Groq ile metin analizi yap
   if (text) {
     console.log("Groq ile metin analizi deneniyor...");
     return await extractWithGroq(text);
