@@ -110,7 +110,9 @@ export async function POST(request: Request) {
             await sendTelegramMessage(chatId, "❌ Kayıt sırasında veritabanı hatası oluştu.");
           }
         } else {
-          await sendTelegramMessage(chatId, `✅ Gider başarıyla eklendi!\n\n💰 Tutar: ${pendingData.amount} TL\n📝 Açıklama: ${pendingData.description}\n📁 Kategori: ${pendingData.category}\n📅 Tarih: ${pendingData.date}`);
+          // Tarihi Türkiye formatında göster (DD.MM.YYYY)
+          const displayDate = pendingData.date.split("-").reverse().join(".");
+          await sendTelegramMessage(chatId, `✅ Gider başarıyla eklendi!\n\n💰 Tutar: ${pendingData.amount} TL\n📝 Açıklama: ${pendingData.description}\n📁 Kategori: ${pendingData.category}\n📅 Tarih: ${displayDate}`);
         }
         deletePendingExpense(id);
 
@@ -242,6 +244,13 @@ export async function POST(request: Request) {
         return NextResponse.json({ ok: true });
       }
 
+      // Eğer işletme adı varsa açıklamaya parantez içinde ekle (çünkü DB'de işletme kolonu yok)
+      let finalDescription = extractionResult.description;
+      if (extractionResult.merchant && !finalDescription.toLocaleLowerCase('tr').includes(extractionResult.merchant.toLocaleLowerCase('tr'))) {
+        finalDescription = `${finalDescription} (${extractionResult.merchant})`;
+      }
+      extractionResult.description = finalDescription;
+
       // Güvenlik ve Onay Mekanizması
       const pendingId = crypto.randomBytes(8).toString("hex");
       savePendingExpense(pendingId, {
@@ -250,14 +259,15 @@ export async function POST(request: Request) {
         telegramMessageId: telegramMessageIdStr
       });
 
+      const displayDate = extractionResult.date.split("-").reverse().join(".");
+
       const confirmMessage = `
 ⚠️ Gider bilgilerini şu şekilde algıladım:
 
 💰 Tutar: ${extractionResult.amount} TL
 📝 Açıklama: ${extractionResult.description}
 📁 Kategori: ${extractionResult.category}
-📅 Tarih: ${extractionResult.date}
-${extractionResult.merchant ? `🏢 İşletme: ${extractionResult.merchant}` : ""}
+📅 Tarih: ${displayDate}
 
 Onaylıyor musunuz?`;
 
