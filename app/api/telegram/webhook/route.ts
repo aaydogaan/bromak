@@ -211,6 +211,11 @@ export async function POST(request: Request) {
         return NextResponse.json({ ok: true });
       }
 
+      if (!extractionResult.date) {
+        // AI tarih bulamazsa, Telegram'ın mesaj tarihini kullan
+        extractionResult.date = new Date(message.date * 1000).toISOString().split('T')[0];
+      }
+
       if (extractionResult.amount === null) {
         await sendTelegramMessage(chatId, "⚠️ Gider eklenemedi.\n\nDekonttan tutar okunamadı.\nLütfen fotoğrafın net olduğundan emin olun veya manuel ekleyin.");
         return NextResponse.json({ ok: true });
