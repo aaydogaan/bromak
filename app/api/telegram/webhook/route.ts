@@ -13,32 +13,39 @@ const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Vercel Serverless ortamında yazılabilir geçici klasör (os.tmpdir()) kullanılır
-const CACHE_DIR = path.join(os.tmpdir(), "telegram_cache");
-try {
-  if (!fs.existsSync(CACHE_DIR)) {
-    fs.mkdirSync(CACHE_DIR, { recursive: true });
+// Supabase Storage tabanlı kalıcı pending cache (Vercel Serverless örnekleri arası paylaşım için)
+async function savePendingExpense(id: string, data: any) {
+  try {
+    const jsonStr = JSON.stringify(data);
+    await supabase.storage
+      .from("expenses")
+      .upload(`pending/${id}.json`, Buffer.from(jsonStr), { contentType: "application/json", upsert: true });
+  } catch (e) {
+    console.error("savePendingExpense error:", e);
   }
-} catch (e) {
-  console.error("Cache dir creation error:", e);
 }
 
-function savePendingExpense(id: string, data: any) {
-  fs.writeFileSync(path.join(CACHE_DIR, `${id}.json`), JSON.stringify(data));
-}
-
-function getPendingExpense(id: string) {
-  const filePath = path.join(CACHE_DIR, `${id}.json`);
-  if (fs.existsSync(filePath)) {
-    return JSON.parse(fs.readFileSync(filePath, "utf-8"));
+async function getPendingExpense(id: string) {
+  try {
+    const { data, error } = await supabase.storage
+      .from("expenses")
+      .download(`pending/${id}.json`);
+    if (error || !data) return null;
+    const text = await data.text();
+    return JSON.parse(text);
+  } catch (e) {
+    console.error("getPendingExpense error:", e);
+    return null;
   }
-  return null;
 }
 
-function deletePendingExpense(id: string) {
-  const filePath = path.join(CACHE_DIR, `${id}.json`);
-  if (fs.existsSync(filePath)) {
-    fs.unlinkSync(filePath);
+async function deletePendingExpense(id: string) {
+  try {
+    await supabase.storage
+      .from("expenses")
+      .remove([`pending/${id}.json`]);
+  } catch (e) {
+    console.error("deletePendingExpense error:", e);
   }
 }
 
@@ -85,7 +92,7 @@ export async function POST(request: Request) {
 
       const [action, id] = data.split("_");
       if (action === "confirm") {
-        const pendingData = getPendingExpense(id);
+        const pendingData = await getPendingExpense(id);
         if (!pendingData) {
           await sendTelegramMessage(chatId, "⚠️ İstek zaman aşımına uğramış veya bulunamadı.");
           return NextResponse.json({ ok: true });
@@ -113,11 +120,11 @@ export async function POST(request: Request) {
           const displayDate = pendingData.date.split("-").reverse().join(".");
           await sendTelegramMessage(chatId, `✅ Gider başarıyla eklendi!\n\n💰 Tutar: ${pendingData.amount} TL\n📝 Açıklama: ${pendingData.description}\n📁 Kategori: ${pendingData.category}\n📅 Tarih: ${displayDate}`);
         }
-        deletePendingExpense(id);
+        await deletePendingExpense(id);
 
       } else if (action === "cancel") {
         await sendTelegramMessage(chatId, "❌ İşlem iptal edildi.");
-        deletePendingExpense(id);
+        await deletePendingExpense(id);
       }
 
       // Answer callback query to remove loading state
@@ -265,7 +272,7 @@ export async function POST(request: Request) {
 
       // Güvenlik ve Onay Mekanizması
       const pendingId = crypto.randomBytes(8).toString("hex");
-      savePendingExpense(pendingId, {
+      await savePendingExpense(pendingId, {
         ...extractionResult,
         attachmentUrl,
         telegramMessageId: telegramMessageIdStr
