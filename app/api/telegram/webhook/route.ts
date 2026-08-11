@@ -63,6 +63,60 @@ async function sendTelegramMessage(chatId: string | number, text: string, replyM
   });
 }
 
+async function editTelegramMessageText(chatId: string | number, messageId: number, text: string, replyMarkup?: any) {
+  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`;
+  await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      message_id: messageId,
+      text,
+      parse_mode: "HTML",
+      reply_markup: replyMarkup
+    }),
+  });
+}
+
+function buildConfirmationKeyboard(pendingId: string) {
+  return {
+    inline_keyboard: [
+      [
+        { text: "✅ Onayla", callback_data: `confirm_${pendingId}` },
+        { text: "❌ İptal", callback_data: `cancel_${pendingId}` }
+      ],
+      [
+        { text: "✏️ Kategori Değiştir", callback_data: `editcat_${pendingId}` }
+      ]
+    ]
+  };
+}
+
+function buildCategoryKeyboard(pendingId: string) {
+  return {
+    inline_keyboard: [
+      [
+        { text: "Yakıt", callback_data: `setcat_${pendingId}_Yakıt` },
+        { text: "Market", callback_data: `setcat_${pendingId}_Market` },
+        { text: "Faturalar", callback_data: `setcat_${pendingId}_Faturalar` }
+      ],
+      [
+        { text: "Kira", callback_data: `setcat_${pendingId}_Kira` },
+        { text: "Yemek", callback_data: `setcat_${pendingId}_Yemek` },
+        { text: "Dijital", callback_data: `setcat_${pendingId}_Dijital` }
+      ],
+      [
+        { text: "Maaş", callback_data: `setcat_${pendingId}_Maaş` },
+        { text: "Ekipman", callback_data: `setcat_${pendingId}_Ekipman` },
+        { text: "Diğer", callback_data: `setcat_${pendingId}_Diğer` }
+      ],
+      [
+        { text: "🔙 Geri", callback_data: `back_${pendingId}` }
+      ]
+    ]
+  };
+}
+
 async function getTelegramFile(fileId: string) {
   const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getFile?file_id=${fileId}`);
   const data = await res.json();
@@ -90,11 +144,13 @@ export async function POST(request: Request) {
         return NextResponse.json({ ok: true });
       }
 
-      const [action, id] = data.split("_");
+      const [action, id, param] = data.split("_");
+      const messageId = callbackQuery.message.message_id;
+
       if (action === "confirm") {
         const pendingData = await getPendingExpense(id);
         if (!pendingData) {
-          await sendTelegramMessage(chatId, "⚠️ İstek zaman aşımına uğramış veya bulunamadı.");
+          await editTelegramMessageText(chatId, messageId, "⚠️ İstek zaman aşımına uğramış veya bulunamadı.");
           return NextResponse.json({ ok: true });
         }
 
@@ -111,20 +167,60 @@ export async function POST(request: Request) {
         if (error) {
           console.error("DB Error:", error);
           if (error.code === '23505') { // Unique violation
-            await sendTelegramMessage(chatId, "⚠️ Bu gider daha önce kaydedilmiş (Çift Kayıt).");
+            await editTelegramMessageText(chatId, messageId, "⚠️ Bu gider mevcuttur (Çift Kayıt).");
           } else {
-            await sendTelegramMessage(chatId, "❌ Kayıt sırasında veritabanı hatası oluştu.");
+            await editTelegramMessageText(chatId, messageId, "❌ Kayıt sırasında veritabanı hatası oluştu.");
           }
         } else {
           // Tarihi Türkiye formatında göster (DD.MM.YYYY)
           const displayDate = pendingData.date.split("-").reverse().join(".");
-          await sendTelegramMessage(chatId, `✅ Gider başarıyla eklendi!\n\n💰 Tutar: ${pendingData.amount} TL\n📝 Açıklama: ${pendingData.description}\n📁 Kategori: ${pendingData.category}\n📅 Tarih: ${displayDate}`);
+          await editTelegramMessageText(chatId, messageId, `✅ Gider başarıyla eklendi!\n\n💰 Tutar: ${pendingData.amount} TL\n📝 Açıklama: ${pendingData.description}\n📁 Kategori: ${pendingData.category}\n📅 Tarih: ${displayDate}`);
         }
         await deletePendingExpense(id);
 
       } else if (action === "cancel") {
-        await sendTelegramMessage(chatId, "❌ İşlem iptal edildi.");
+        await editTelegramMessageText(chatId, messageId, "❌ İşlem iptal edildi.");
         await deletePendingExpense(id);
+
+      } else if (action === "editcat") {
+        await editTelegramMessageText(chatId, messageId, "📁 <b>Lütfen yeni kategoriyi seçin:</b>", buildCategoryKeyboard(id));
+
+      } else if (action === "setcat" && param) {
+        const pendingData = await getPendingExpense(id);
+        if (pendingData) {
+          pendingData.category = param;
+          await savePendingExpense(id, pendingData);
+
+          const displayDate = pendingData.date.split("-").reverse().join(".");
+          const updatedMessage = `
+⚠️ Gider bilgilerini şu şekilde algıladım:
+
+💰 Tutar: ${pendingData.amount} TL
+📝 Açıklama: ${pendingData.description}
+📁 Kategori: <b>${pendingData.category}</b> (Güncellendi ✏️)
+📅 Tarih: ${displayDate}
+
+Onaylıyor musunuz?`;
+
+          await editTelegramMessageText(chatId, messageId, updatedMessage, buildConfirmationKeyboard(id));
+        }
+
+      } else if (action === "back") {
+        const pendingData = await getPendingExpense(id);
+        if (pendingData) {
+          const displayDate = pendingData.date.split("-").reverse().join(".");
+          const confirmMessage = `
+⚠️ Gider bilgilerini şu şekilde algıladım:
+
+💰 Tutar: ${pendingData.amount} TL
+📝 Açıklama: ${pendingData.description}
+📁 Kategori: ${pendingData.category}
+📅 Tarih: ${displayDate}
+
+Onaylıyor musunuz?`;
+
+          await editTelegramMessageText(chatId, messageId, confirmMessage, buildConfirmationKeyboard(id));
+        }
       }
 
       // Answer callback query to remove loading state
@@ -290,14 +386,7 @@ export async function POST(request: Request) {
 
 Onaylıyor musunuz?`;
 
-      await sendTelegramMessage(chatId, confirmMessage, {
-        inline_keyboard: [
-          [
-            { text: "✅ Onayla", callback_data: `confirm_${pendingId}` },
-            { text: "❌ İptal", callback_data: `cancel_${pendingId}` }
-          ]
-        ]
-      });
+      await sendTelegramMessage(chatId, confirmMessage, buildConfirmationKeyboard(pendingId));
     }
 
     return NextResponse.json({ ok: true });
