@@ -188,7 +188,7 @@ export async function POST(request: Request) {
          if (isImage || isPdf) {
             const fileData = await getTelegramFile(doc.file_id);
             if (fileData) {
-              imageBuffer = isImage ? fileData.buffer : undefined;
+              imageBuffer = fileData.buffer;
               mimeType = doc.mime_type;
               
               // Eğer PDF ise içerisindeki metni oku (pdf-parse v1 ve v2 uyumlu)
