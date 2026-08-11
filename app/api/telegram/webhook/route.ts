@@ -191,14 +191,25 @@ export async function POST(request: Request) {
               imageBuffer = isImage ? fileData.buffer : undefined;
               mimeType = doc.mime_type;
               
-              // Eğer PDF ise içerisindeki metni oku
+              // Eğer PDF ise içerisindeki metni oku (pdf-parse v1 ve v2 uyumlu)
               if (isPdf) {
                  try {
-                    // CommonJS module import for Turbopack compatibility
-                    const pdfParse = require("pdf-parse");
-                    const parsedPdf = await pdfParse(fileData.buffer);
-                    if (parsedPdf && parsedPdf.text) {
-                       messageText = (messageText ? messageText + "\n" : "") + "PDF İçeriği:\n" + parsedPdf.text;
+                    const pdfModule = require("pdf-parse");
+                    let pdfText = "";
+
+                    if (pdfModule.PDFParse) {
+                       // pdf-parse v2 (Mehmet Kozan)
+                       const parser = new pdfModule.PDFParse({ data: fileData.buffer });
+                       const parsed = await parser.getText();
+                       pdfText = parsed.text || "";
+                    } else if (typeof pdfModule === "function") {
+                       // pdf-parse v1 (Classic)
+                       const parsed = await pdfModule(fileData.buffer);
+                       pdfText = parsed.text || "";
+                    }
+
+                    if (pdfText) {
+                       messageText = (messageText ? messageText + "\n" : "") + "PDF Dekont İçeriği:\n" + pdfText;
                     }
                  } catch (pdfErr) {
                     console.error("PDF okuma hatası:", pdfErr);
