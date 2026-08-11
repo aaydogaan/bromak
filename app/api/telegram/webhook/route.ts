@@ -5,7 +5,6 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 import * as crypto from "crypto";
-import pdfParse from "pdf-parse";
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8476885653:AAGWAH4FToBa9ehjwvCTO_idyTlSXsg0ncY";
 const ALLOWED_CHAT_ID = process.env.TELEGRAM_ALLOWED_CHAT_ID || "-5249730279";
@@ -130,7 +129,7 @@ export async function POST(request: Request) {
     if (body.message) {
       const message = body.message;
       const chatId = message.chat.id;
-      const messageText = message.caption || message.text || "";
+      let messageText = message.caption || message.text || "";
 
       if (String(chatId) !== String(ALLOWED_CHAT_ID)) {
         // Eğer kullanıcı ID öğrenmek için bir şey yazdıysa bot cevap versin
@@ -195,6 +194,8 @@ export async function POST(request: Request) {
               // Eğer PDF ise içerisindeki metni oku
               if (isPdf) {
                  try {
+                    // CommonJS module import for Turbopack compatibility
+                    const pdfParse = require("pdf-parse");
                     const parsedPdf = await pdfParse(fileData.buffer);
                     if (parsedPdf && parsedPdf.text) {
                        messageText = (messageText ? messageText + "\n" : "") + "PDF İçeriği:\n" + parsedPdf.text;
