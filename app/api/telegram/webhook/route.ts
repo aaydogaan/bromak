@@ -3,19 +3,24 @@ import { createClient } from "@supabase/supabase-js";
 import { extractExpenseDataWithGemini, ExpenseExtractionResult } from "@/lib/expense-ai";
 import * as fs from "fs";
 import * as path from "path";
+import * as os from "os";
 import * as crypto from "crypto";
 
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN!;
-const ALLOWED_CHAT_ID = process.env.TELEGRAM_ALLOWED_CHAT_ID;
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8476885653:AAGWAH4FToBa9ehjwvCTO_idyTlSXsg0ncY";
+const ALLOWED_CHAT_ID = process.env.TELEGRAM_ALLOWED_CHAT_ID || "-5249730279";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Geçici pending durumları saklamak için basit bir JSON dosyası tabanlı cache
-const CACHE_DIR = path.join(process.cwd(), ".telegram_cache");
-if (!fs.existsSync(CACHE_DIR)) {
-  fs.mkdirSync(CACHE_DIR, { recursive: true });
+// Vercel Serverless ortamında yazılabilir geçici klasör (os.tmpdir()) kullanılır
+const CACHE_DIR = path.join(os.tmpdir(), "telegram_cache");
+try {
+  if (!fs.existsSync(CACHE_DIR)) {
+    fs.mkdirSync(CACHE_DIR, { recursive: true });
+  }
+} catch (e) {
+  console.error("Cache dir creation error:", e);
 }
 
 function savePendingExpense(id: string, data: any) {
@@ -251,8 +256,9 @@ Onaylıyor musunuz?`;
     }
 
     return NextResponse.json({ ok: true });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Webhook error:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    // Telegram 500 alıp tekrar tekrar istek atmasın diye 200 dönüyoruz
+    return NextResponse.json({ ok: true, error: error?.message });
   }
 }
