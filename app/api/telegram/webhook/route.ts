@@ -5,6 +5,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 import * as crypto from "crypto";
+import pdfParse from "pdf-parse";
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8476885653:AAGWAH4FToBa9ehjwvCTO_idyTlSXsg0ncY";
 const ALLOWED_CHAT_ID = process.env.TELEGRAM_ALLOWED_CHAT_ID || "-5249730279";
@@ -179,18 +180,33 @@ export async function POST(request: Request) {
           }
         }
       } else if (message.document) {
-         // Eğer PDF vs atılırsa işlenebilir ama şimdilik sadece jpeg
          const doc = message.document;
-         if (doc.mime_type?.startsWith("image/")) {
+         const isImage = doc.mime_type?.startsWith("image/");
+         const isPdf = doc.mime_type === "application/pdf";
+
+         if (isImage || isPdf) {
             const fileData = await getTelegramFile(doc.file_id);
             if (fileData) {
-              imageBuffer = fileData.buffer;
+              imageBuffer = isImage ? fileData.buffer : undefined;
               mimeType = doc.mime_type;
               
-              const fileName = `tg_${Date.now()}_${doc.file_id}`;
+              // Eğer PDF ise içerisindeki metni oku
+              if (isPdf) {
+                 try {
+                    const parsedPdf = await pdfParse(fileData.buffer);
+                    if (parsedPdf && parsedPdf.text) {
+                       messageText = (messageText ? messageText + "\n" : "") + "PDF İçeriği:\n" + parsedPdf.text;
+                    }
+                 } catch (pdfErr) {
+                    console.error("PDF okuma hatası:", pdfErr);
+                 }
+              }
+
+              const ext = isPdf ? ".pdf" : "";
+              const fileName = `tg_${Date.now()}_${doc.file_id}${ext}`;
               const { error: uploadError } = await supabase.storage
                 .from("expenses")
-                .upload(`expenses/${fileName}`, imageBuffer, { contentType: mimeType });
+                .upload(`expenses/${fileName}`, fileData.buffer, { contentType: mimeType });
 
               if (!uploadError) {
                 const { data: { publicUrl } } = supabase.storage
