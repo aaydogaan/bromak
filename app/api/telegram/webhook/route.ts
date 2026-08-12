@@ -448,8 +448,6 @@ export async function POST(request: Request) {
       }
 
       // Gemini AI Analizi
-      await sendTelegramMessage(chatId, "⏳ Mesajınız/Dekontunuz analiz ediliyor...");
-      
       const extractionResult = await extractExpenseDataWithGemini(messageText, imageBuffer, mimeType);
 
       if (!extractionResult) {
