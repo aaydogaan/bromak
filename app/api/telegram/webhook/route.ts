@@ -13,13 +13,22 @@ const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Supabase Storage tabanlı kalıcı pending cache (Vercel Serverless örnekleri arası paylaşım için)
+// Supabase Storage tabanlı kalıcı pending cache (RLS çakışmasını önlemek için önce remove sonra upload yapılır)
 async function savePendingExpense(id: string, data: any) {
   try {
     const jsonStr = JSON.stringify(data);
+    await supabase.storage.from("expenses").remove([`pending/${id}.json`]);
     await supabase.storage
       .from("expenses")
-      .upload(`pending/${id}.json`, Buffer.from(jsonStr), { contentType: "application/json", upsert: true });
+      .upload(`pending/${id}.json`, Buffer.from(jsonStr), { contentType: "application/json" });
+
+    if (data.chatId) {
+      const latestPath = `pending/latest_${data.chatId}.json`;
+      await supabase.storage.from("expenses").remove([latestPath]);
+      await supabase.storage
+        .from("expenses")
+        .upload(latestPath, Buffer.from(JSON.stringify({ pendingId: id })), { contentType: "application/json" });
+    }
   } catch (e) {
     console.error("savePendingExpense error:", e);
   }
@@ -39,11 +48,26 @@ async function getPendingExpense(id: string) {
   }
 }
 
-async function deletePendingExpense(id: string) {
+async function getLatestPendingExpense(chatId: string | number) {
   try {
-    await supabase.storage
+    const { data } = await supabase.storage
       .from("expenses")
-      .remove([`pending/${id}.json`]);
+      .download(`pending/latest_${chatId}.json`);
+    if (!data) return null;
+    const json = JSON.parse(await data.text());
+    if (!json?.pendingId) return null;
+    return await getPendingExpense(json.pendingId);
+  } catch {
+    return null;
+  }
+}
+
+async function deletePendingExpense(id: string, chatId?: string | number) {
+  try {
+    await supabase.storage.from("expenses").remove([`pending/${id}.json`]);
+    if (chatId) {
+      await supabase.storage.from("expenses").remove([`pending/latest_${chatId}.json`]);
+    }
   } catch (e) {
     console.error("deletePendingExpense error:", e);
   }
@@ -51,7 +75,7 @@ async function deletePendingExpense(id: string) {
 
 async function sendTelegramMessage(chatId: string | number, text: string, replyMarkup?: any) {
   const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-  await fetch(url, {
+  const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -61,6 +85,7 @@ async function sendTelegramMessage(chatId: string | number, text: string, replyM
       reply_markup: replyMarkup
     }),
   });
+  return await res.json();
 }
 
 async function editTelegramMessageText(chatId: string | number, messageId: number, text: string, replyMarkup?: any) {
@@ -86,7 +111,25 @@ function buildConfirmationKeyboard(pendingId: string) {
         { text: "❌ İptal", callback_data: `cancel_${pendingId}` }
       ],
       [
-        { text: "✏️ Kategori Değiştir", callback_data: `editcat_${pendingId}` }
+        { text: "✏️ Düzenle (Kategori / Tutar / Not / Tarih)", callback_data: `menu_${pendingId}` }
+      ]
+    ]
+  };
+}
+
+function buildEditMenuKeyboard(pendingId: string) {
+  return {
+    inline_keyboard: [
+      [
+        { text: "📁 Kategori Değiştir", callback_data: `editcat_${pendingId}` },
+        { text: "💰 Tutar Değiştir", callback_data: `editamt_${pendingId}` }
+      ],
+      [
+        { text: "📝 Açıklama Değiştir", callback_data: `editdesc_${pendingId}` },
+        { text: "📅 Tarih Değiştir", callback_data: `editdate_${pendingId}` }
+      ],
+      [
+        { text: "🔙 Geri (Onay Ekranı)", callback_data: `back_${pendingId}` }
       ]
     ]
   };
@@ -111,10 +154,24 @@ function buildCategoryKeyboard(pendingId: string) {
         { text: "Diğer", callback_data: `setcat_${pendingId}_Diğer` }
       ],
       [
-        { text: "🔙 Geri", callback_data: `back_${pendingId}` }
+        { text: "🔙 Geri", callback_data: `menu_${pendingId}` }
       ]
     ]
   };
+}
+
+function renderConfirmationMessage(pendingData: any, isUpdated: boolean = false): string {
+  const displayDate = pendingData.date ? pendingData.date.split("-").reverse().join(".") : "";
+  return `
+⚠️ Gider bilgilerini şu şekilde algıladım:
+
+💰 Tutar: ${pendingData.amount} TL
+📝 Açıklama: ${pendingData.description}
+📁 Kategori: ${pendingData.category}
+📅 Tarih: ${displayDate}
+${isUpdated ? "\n<i>(Düzenleme güncellendi ✏️)</i>" : ""}
+
+Onaylıyor musunuz?`;
 }
 
 async function getTelegramFile(fileId: string) {
@@ -138,7 +195,7 @@ export async function POST(request: Request) {
     if (body.callback_query) {
       const callbackQuery = body.callback_query;
       const chatId = callbackQuery.message.chat.id;
-      const data = callbackQuery.data; // Örn: confirm_12345 veya cancel_12345
+      const data = callbackQuery.data;
 
       if (String(chatId) !== String(ALLOWED_CHAT_ID)) {
         return NextResponse.json({ ok: true });
@@ -166,21 +223,28 @@ export async function POST(request: Request) {
 
         if (error) {
           console.error("DB Error:", error);
-          if (error.code === '23505') { // Unique violation
+          if (error.code === '23505') {
             await editTelegramMessageText(chatId, messageId, "⚠️ Bu gider mevcuttur (Çift Kayıt).");
           } else {
             await editTelegramMessageText(chatId, messageId, "❌ Kayıt sırasında veritabanı hatası oluştu.");
           }
         } else {
-          // Tarihi Türkiye formatında göster (DD.MM.YYYY)
           const displayDate = pendingData.date.split("-").reverse().join(".");
           await editTelegramMessageText(chatId, messageId, `✅ Gider başarıyla eklendi!\n\n💰 Tutar: ${pendingData.amount} TL\n📝 Açıklama: ${pendingData.description}\n📁 Kategori: ${pendingData.category}\n📅 Tarih: ${displayDate}`);
         }
-        await deletePendingExpense(id);
+        await deletePendingExpense(id, chatId);
 
       } else if (action === "cancel") {
         await editTelegramMessageText(chatId, messageId, "❌ İşlem iptal edildi.");
-        await deletePendingExpense(id);
+        await deletePendingExpense(id, chatId);
+
+      } else if (action === "menu") {
+        const pendingData = await getPendingExpense(id);
+        if (pendingData) {
+          pendingData.waitingFor = null;
+          await savePendingExpense(id, pendingData);
+          await editTelegramMessageText(chatId, messageId, "✏️ <b>Neyi düzenlemek istersiniz?</b>", buildEditMenuKeyboard(id));
+        }
 
       } else if (action === "editcat") {
         await editTelegramMessageText(chatId, messageId, "📁 <b>Lütfen yeni kategoriyi seçin:</b>", buildCategoryKeyboard(id));
@@ -189,41 +253,50 @@ export async function POST(request: Request) {
         const pendingData = await getPendingExpense(id);
         if (pendingData) {
           pendingData.category = param;
+          pendingData.waitingFor = null;
           await savePendingExpense(id, pendingData);
+          await editTelegramMessageText(chatId, messageId, renderConfirmationMessage(pendingData, true), buildConfirmationKeyboard(id));
+        }
 
-          const displayDate = pendingData.date.split("-").reverse().join(".");
-          const updatedMessage = `
-⚠️ Gider bilgilerini şu şekilde algıladım:
+      } else if (action === "editamt") {
+        const pendingData = await getPendingExpense(id);
+        if (pendingData) {
+          pendingData.waitingFor = "amount";
+          await savePendingExpense(id, pendingData);
+          await editTelegramMessageText(chatId, messageId, "💰 <b>Lütfen yeni tutarı rakam olarak yazın:</b>\n<i>(Örn: 250 veya 1500.50)</i>", {
+            inline_keyboard: [[{ text: "🔙 İptal / Geri", callback_data: `menu_${id}` }]]
+          });
+        }
 
-💰 Tutar: ${pendingData.amount} TL
-📝 Açıklama: ${pendingData.description}
-📁 Kategori: <b>${pendingData.category}</b> (Güncellendi ✏️)
-📅 Tarih: ${displayDate}
+      } else if (action === "editdesc") {
+        const pendingData = await getPendingExpense(id);
+        if (pendingData) {
+          pendingData.waitingFor = "description";
+          await savePendingExpense(id, pendingData);
+          await editTelegramMessageText(chatId, messageId, "📝 <b>Lütfen yeni açıklamayı yazın:</b>\n<i>(Örn: Ofis için kırtasiye alışverişi)</i>", {
+            inline_keyboard: [[{ text: "🔙 İptal / Geri", callback_data: `menu_${id}` }]]
+          });
+        }
 
-Onaylıyor musunuz?`;
-
-          await editTelegramMessageText(chatId, messageId, updatedMessage, buildConfirmationKeyboard(id));
+      } else if (action === "editdate") {
+        const pendingData = await getPendingExpense(id);
+        if (pendingData) {
+          pendingData.waitingFor = "date";
+          await savePendingExpense(id, pendingData);
+          await editTelegramMessageText(chatId, messageId, "📅 <b>Lütfen yeni tarihi GG.AA.YYYY formatında yazın:</b>\n<i>(Örn: 15.08.2026)</i>", {
+            inline_keyboard: [[{ text: "🔙 İptal / Geri", callback_data: `menu_${id}` }]]
+          });
         }
 
       } else if (action === "back") {
         const pendingData = await getPendingExpense(id);
         if (pendingData) {
-          const displayDate = pendingData.date.split("-").reverse().join(".");
-          const confirmMessage = `
-⚠️ Gider bilgilerini şu şekilde algıladım:
-
-💰 Tutar: ${pendingData.amount} TL
-📝 Açıklama: ${pendingData.description}
-📁 Kategori: ${pendingData.category}
-📅 Tarih: ${displayDate}
-
-Onaylıyor musunuz?`;
-
-          await editTelegramMessageText(chatId, messageId, confirmMessage, buildConfirmationKeyboard(id));
+          pendingData.waitingFor = null;
+          await savePendingExpense(id, pendingData);
+          await editTelegramMessageText(chatId, messageId, renderConfirmationMessage(pendingData), buildConfirmationKeyboard(id));
         }
       }
 
-      // Answer callback query to remove loading state
       await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery?callback_query_id=${callbackQuery.id}`);
       return NextResponse.json({ ok: true });
     }
@@ -235,17 +308,58 @@ Onaylıyor musunuz?`;
       let messageText = message.caption || message.text || "";
 
       if (String(chatId) !== String(ALLOWED_CHAT_ID)) {
-        // Eğer kullanıcı ID öğrenmek için bir şey yazdıysa bot cevap versin
         if (messageText.includes("id")) {
            await sendTelegramMessage(chatId, `Bu grubun (veya sohbetin) ID'si: <b>${chatId}</b>\n\nBu ID'yi .env.local dosyanızdaki TELEGRAM_ALLOWED_CHAT_ID bölümüne yapıştırabilirsiniz.`);
         }
         return NextResponse.json({ ok: true });
       }
 
+      // Kullanıcının aktif bir düzenleme (waitingFor) isteği var mı kontrol et
+      const activePendingData = await getLatestPendingExpense(chatId);
+      if (activePendingData && activePendingData.waitingFor && messageText && !message.photo && !message.document) {
+        const field = activePendingData.waitingFor;
+        let isSuccess = false;
+
+        if (field === "amount") {
+          const rawNum = messageText.replace(/\./g, "").replace(/,/g, ".");
+          const num = parseFloat(rawNum);
+          if (!isNaN(num) && num > 0) {
+            activePendingData.amount = num;
+            isSuccess = true;
+          } else {
+            await sendTelegramMessage(chatId, "⚠️ Lütfen geçerli bir tutar yazın (Örn: 250 veya 1500.50).");
+            return NextResponse.json({ ok: true });
+          }
+        } else if (field === "description") {
+          activePendingData.description = messageText.trim();
+          isSuccess = true;
+        } else if (field === "date") {
+          const parts = messageText.trim().split(".");
+          if (parts.length === 3) {
+            const [d, m, y] = parts;
+            activePendingData.date = `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+            isSuccess = true;
+          } else if (messageText.includes("-")) {
+            activePendingData.date = messageText.trim();
+            isSuccess = true;
+          } else {
+            await sendTelegramMessage(chatId, "⚠️ Lütfen tarihi GG.AA.YYYY formatında yazın (Örn: 15.08.2026).");
+            return NextResponse.json({ ok: true });
+          }
+        }
+
+        if (isSuccess) {
+          activePendingData.waitingFor = null;
+          await savePendingExpense(activePendingData.pendingId, activePendingData);
+          await sendTelegramMessage(chatId, renderConfirmationMessage(activePendingData, true), buildConfirmationKeyboard(activePendingData.pendingId));
+          return NextResponse.json({ ok: true });
+        }
+      }
+
       const messageId = message.message_id;
       const telegramMessageIdStr = `${chatId}_${messageId}`;
 
-      // Eğer sistemde daha önce işlenmişse, işlem yapma
+      // Daha önce işlenmiş mi?
       const { data: existingData } = await supabase
         .from("expenses")
         .select("id")
@@ -257,20 +371,17 @@ Onaylıyor musunuz?`;
         return NextResponse.json({ ok: true });
       }
 
-      // Fotoğraf var mı kontrolü
       let imageBuffer: Buffer | undefined;
       let mimeType: string | undefined;
       let attachmentUrl = "";
 
       if (message.photo && message.photo.length > 0) {
-        // En yüksek çözünürlüklü olanı al (dizinin sonundaki)
         const photo = message.photo[message.photo.length - 1];
         const fileData = await getTelegramFile(photo.file_id);
         if (fileData) {
           imageBuffer = fileData.buffer;
-          mimeType = "image/jpeg"; // Telegram fotoları genelde jpeg'dir
+          mimeType = "image/jpeg";
 
-          // Supabase Storage'a Yükleme
           const fileName = `tg_${Date.now()}_${photo.file_id}.jpg`;
           const { error: uploadError } = await supabase.storage
             .from("expenses")
@@ -294,19 +405,16 @@ Onaylıyor musunuz?`;
               imageBuffer = fileData.buffer;
               mimeType = doc.mime_type;
               
-              // Eğer PDF ise içerisindeki metni oku (pdf-parse v1 ve v2 uyumlu)
               if (isPdf) {
                  try {
                     const pdfModule = require("pdf-parse");
                     let pdfText = "";
 
                     if (pdfModule.PDFParse) {
-                       // pdf-parse v2 (Mehmet Kozan)
                        const parser = new pdfModule.PDFParse({ data: fileData.buffer });
                        const parsed = await parser.getText();
                        pdfText = parsed.text || "";
                     } else if (typeof pdfModule === "function") {
-                       // pdf-parse v1 (Classic)
                        const parsed = await pdfModule(fileData.buffer);
                        pdfText = parsed.text || "";
                     }
@@ -350,7 +458,6 @@ Onaylıyor musunuz?`;
       }
 
       if (!extractionResult.date) {
-        // AI tarih bulamazsa, Telegram'ın mesaj tarihini kullan
         extractionResult.date = new Date(message.date * 1000).toISOString().split('T')[0];
       }
 
@@ -359,40 +466,29 @@ Onaylıyor musunuz?`;
         return NextResponse.json({ ok: true });
       }
 
-      // Eğer işletme adı varsa açıklamaya parantez içinde ekle (çünkü DB'de işletme kolonu yok)
       let finalDescription = extractionResult.description;
       if (extractionResult.merchant && !finalDescription.toLocaleLowerCase('tr').includes(extractionResult.merchant.toLocaleLowerCase('tr'))) {
         finalDescription = `${finalDescription} (${extractionResult.merchant})`;
       }
       extractionResult.description = finalDescription;
 
-      // Güvenlik ve Onay Mekanizması
       const pendingId = crypto.randomBytes(8).toString("hex");
-      await savePendingExpense(pendingId, {
+      const pendingDataToSave = {
         ...extractionResult,
+        pendingId,
+        chatId,
         attachmentUrl,
         telegramMessageId: telegramMessageIdStr
-      });
+      };
 
-      const displayDate = extractionResult.date.split("-").reverse().join(".");
+      await savePendingExpense(pendingId, pendingDataToSave);
 
-      const confirmMessage = `
-⚠️ Gider bilgilerini şu şekilde algıladım:
-
-💰 Tutar: ${extractionResult.amount} TL
-📝 Açıklama: ${extractionResult.description}
-📁 Kategori: ${extractionResult.category}
-📅 Tarih: ${displayDate}
-
-Onaylıyor musunuz?`;
-
-      await sendTelegramMessage(chatId, confirmMessage, buildConfirmationKeyboard(pendingId));
+      await sendTelegramMessage(chatId, renderConfirmationMessage(pendingDataToSave), buildConfirmationKeyboard(pendingId));
     }
 
     return NextResponse.json({ ok: true });
   } catch (error: any) {
     console.error("Webhook error:", error);
-    // Telegram 500 alıp tekrar tekrar istek atmasın diye 200 dönüyoruz
     return NextResponse.json({ ok: true, error: error?.message });
   }
 }
